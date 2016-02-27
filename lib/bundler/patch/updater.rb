@@ -30,6 +30,15 @@ module Bundler::Patch
   class Updater
     attr_accessor :verbose
 
+    def self.files
+      {
+        '.ruby-version' => /.*/,
+        'manifest.yml' => [/runtime: (.*)/],
+        '.jenkins.xml' => [/\<string\>(.*)\<\/string\>/, /rvm.*\>ruby-(.*)@/, /version.*rbenv.*\>(.*)\</]
+      }
+
+    end
+
     def initialize(update_specs=[], options={})
       @update_specs = update_specs
       @options = options
@@ -40,12 +49,10 @@ module Bundler::Patch
         begin
           prep_git_checkout(spec) if options[:ensure_clean_git]
 
-          # this should be refactored so there's simply a list of
-          update_ruby_version(spec)
-          update_jenkins_versions(spec)
-
-          # this is LS specific, we should support custom replacements
-          update_manifest(spec)
+          self.files.each do |fn, res|
+            filename = File.join(spec.target_dir, fn)
+            file_replace(filename, res)
+          end
         rescue => e
           puts "#{spec[:project]}: #{e.message}"
         end
@@ -61,23 +68,6 @@ module Bundler::Patch
 
         verbose_puts `git pull`
       end
-    end
-
-    def update_ruby_version(spec)
-      ruby_version_filename = File.join(spec.target_dir, '.ruby-version')
-      file_replace(ruby_version_filename, /.*/)
-    end
-
-    def update_manifest(spec)
-      manifest = File.join(spec.target_dir, 'manifest.yml')
-      file_replace(manifest, [/runtime: (.*)/])
-    end
-
-    def update_jenkins_versions(spec)
-      jenkins_filename = File.join(spec.target_dir, '.jenkins.xml')
-      file_replace(jenkins_filename, [/\<string\>(.*)\<\/string\>/,
-                                      /rvm.*\>ruby-(.*)@/,
-                                      /version.*rbenv.*\>(.*)\</])
     end
 
     def file_replace(filename, res)

@@ -9,7 +9,7 @@ include Bundler::Patch
 describe UpdateSpec do
   before do
     patched_versions = %w(1.9.3-p550 2.1.4 ruby-2.1.4-p265 jruby-1.7.16.1)
-    @u = UpdateSpec.new.tap { |u| u.patched_versions = patched_versions }
+    @u = UpdateSpec.new(patched_versions: patched_versions)
   end
 
   it 'calc_new_version' do
@@ -32,17 +32,16 @@ end
 describe Updater do
   before do
     dirs = %w(./fixture/bar ./fixture/foo ./fixture/java)
-    old = %w(1.9.3-p484 2.1.2 ruby-2.1.2-p95 jruby-1.7.16)
+    old = %w(1.9.3-p484 2.1.2 jruby-1.7.16)
     patched_versions = %w(1.9.3-p550 2.1.4 ruby-2.1.4-p265 jruby-1.7.16.1)
 
-    specs = dirs.map do |d|
-      UpdateSpec.new.tap do |s|
-        s.target_file = '.ruby-version'
-        s.patched_versions = patched_versions
-      end
+    @specs = dirs.map do |dir|
+      UpdateSpec.new(target_file: '.ruby-version',
+                     target_dir: File.join(File.dirname(__FILE__), dir),
+                     patched_versions: patched_versions)
     end
 
-    @u = Updater.new(specs)
+    @u = Updater.new(@specs)
 
     dirs.each_with_index do |dir, i|
       dir = File.join(File.dirname(__FILE__), dir)
@@ -56,11 +55,21 @@ describe Updater do
     FileUtils.rmtree(File.join(File.dirname(__FILE__), 'fixture'))
   end
 
+  it 'should update ruby version files in different dirs' do
+    @u.update_apps
+
+    read_spec_contents(@specs[0]).should == '1.9.3-p550'
+    read_spec_contents(@specs[1]).should == '2.1.4'
+    read_spec_contents(@specs[2]).should == 'jruby-1.7.16.1'
+  end
+
+  def read_spec_contents(spec)
+    File.read(spec.target_path_fn).chomp
+  end
+
   it 'should support ensure_clean_git option' # just need tests around this
 
   it 'should support custom file replacement definitions'
 
   it 'should support Gemfile replacements' # existing ruby version replacement code didn't do Gemfile yet
-
-  it 'should use definition mechanism internally'
 end

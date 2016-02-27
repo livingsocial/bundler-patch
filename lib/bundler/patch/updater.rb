@@ -1,12 +1,19 @@
 module Bundler::Patch
   class UpdateSpec
-    attr_accessor :target_file, :target_dir, :patched_versions
+    attr_accessor :target_file, :target_dir, :regexes, :patched_versions
 
-    def initialize
-      @target_file = 'Gemfile'
-      @target_dir = Dir.pwd
-      @target_path_fn = File.join(@target_dir, @target_file)
-      @patched_versions = []
+    def initialize(target_file: 'Gemfile',
+                   target_dir: Dir.pwd,
+                   regexes: [/.*/],
+                   patched_versions: [])
+      @target_file = target_file
+      @target_dir = target_dir
+      @regexes = regexes
+      @patched_versions = patched_versions
+    end
+
+    def target_path_fn
+      File.join(@target_dir, @target_file)
     end
 
     # this would prolly be educational to play ruby golf with.
@@ -30,15 +37,6 @@ module Bundler::Patch
   class Updater
     attr_accessor :verbose
 
-    def self.files
-      {
-        '.ruby-version' => /.*/,
-        'manifest.yml' => [/runtime: (.*)/],
-        '.jenkins.xml' => [/\<string\>(.*)\<\/string\>/, /rvm.*\>ruby-(.*)@/, /version.*rbenv.*\>(.*)\</]
-      }
-
-    end
-
     def initialize(update_specs=[], options={})
       @update_specs = update_specs
       @options = options
@@ -46,16 +44,9 @@ module Bundler::Patch
 
     def update_apps
       @update_specs.each do |spec|
-        begin
-          prep_git_checkout(spec) if options[:ensure_clean_git]
+        prep_git_checkout(spec) if @options[:ensure_clean_git]
 
-          self.files.each do |fn, res|
-            filename = File.join(spec.target_dir, fn)
-            file_replace(filename, res)
-          end
-        rescue => e
-          puts "#{spec[:project]}: #{e.message}"
-        end
+        file_replace(spec)
       end
     end
 
@@ -70,21 +61,23 @@ module Bundler::Patch
       end
     end
 
-    def file_replace(filename, res)
+    def file_replace(spec)
+      # SMELL: spec envy
+      filename = spec.target_path_fn
       unless File.exist?(filename)
-        verbose_puts "Cannot find #{filename}"
+        puts "Cannot find #{filename}"
         return
       end
 
       lines = File.readlines(filename)
       any_changes = false
       lines.map! do |ln|
-        re = [res].flatten.detect { |re| !ln.scan(re).empty? }
+        re = [spec.regexes].flatten.detect { |re| !ln.scan(re).empty? }
         app_version = re ? ln.scan(re).join : nil
         if app_version.nil?
           ln
         else
-          new_version = calc_new_version(app_version)
+          new_version = spec.calc_new_version(app_version)
           if app_version == new_version
             ln
           else

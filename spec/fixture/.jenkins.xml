@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><matrix-project plugin="matrix-project@1.2">
+  <actions/>
+  <description/>
+  <logRotator class="hudson.tasks.LogRotator">
+    <daysToKeep>7</daysToKeep>
+    <numToKeep>10</numToKeep>
+    <artifactDaysToKeep>-1</artifactDaysToKeep>
+    <artifactNumToKeep>-1</artifactNumToKeep>
+  </logRotator>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@1.4.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <name/>
+        <refspec/>
+        <url>git@github.com:foo/bar.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>**</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <disableSubmodules>false</disableSubmodules>
+    <recursiveSubmodules>false</recursiveSubmodules>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <authorOrCommitter>false</authorOrCommitter>
+    <clean>false</clean>
+    <wipeOutWorkspace>false</wipeOutWorkspace>
+    <pruneBranches>false</pruneBranches>
+    <remotePoll>false</remotePoll>
+    <ignoreNotifyCommit>false</ignoreNotifyCommit>
+    <useShallowClone>false</useShallowClone>
+    <buildChooser class="hudson.plugins.git.util.DefaultBuildChooser"/>
+    <gitTool>Default</gitTool>
+    <submoduleCfg class="list"/>
+    <relativeTargetDir/>
+    <reference/>
+    <excludedRegions/>
+    <excludedUsers/>
+    <gitConfigName/>
+    <gitConfigEmail/>
+    <skipTag>false</skipTag>
+    <includedRegions/>
+    <scmName/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>@daily</spec>
+    </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>*/1 * * * * </spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <axes>
+    <hudson.matrix.TextAxis>
+      <name>RUNTIME</name>
+      <values>
+        <string>1.9.3-p484</string>
+        <string>2.1.2</string>
+        <string>jruby-1.7.16</string>
+      </values>
+    </hudson.matrix.TextAxis>
+  </axes>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>RBENV_VERSION=${RUNTIME} bundle install --path vendor</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>RBENV_VERSION=${RUNTIME} bundle exec rake ci --trace</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.Mailer plugin="mailer@1.8">
+      <recipients>foobar@example.com</recipients>
+      <dontNotifyEveryUnstableBuild>false</dontNotifyEveryUnstableBuild>
+      <sendToIndividuals>false</sendToIndividuals>
+    </hudson.tasks.Mailer>
+  </publishers>
+  <buildWrappers>
+    <ruby-proxy-object>
+      <ruby-object ruby-class="Jenkins::Tasks::BuildWrapperProxy" pluginid="rbenv">
+        <pluginid pluginid="rbenv" ruby-class="String">rbenv</pluginid>
+        <object ruby-class="RbenvWrapper" pluginid="rbenv">
+          <ruby__build__repository pluginid="rbenv" ruby-class="String">https://github.com/sstephenson/ruby-build.git</ruby__build__repository>
+          <rbenv__root pluginid="rbenv" ruby-class="String">$HOME/.rbenv</rbenv__root>
+          <rbenv__revision pluginid="rbenv" ruby-class="String">master</rbenv__revision>
+          <rbenv__repository pluginid="rbenv" ruby-class="String">https://github.com/sstephenson/rbenv.git</rbenv__repository>
+          <ruby__build__revision pluginid="rbenv" ruby-class="String">master</ruby__build__revision>
+          <gem__list pluginid="rbenv" ruby-class="String">bundler,rake</gem__list>
+          <version pluginid="rbenv" ruby-class="String">1.9.3-p484</version>
+          <ignore__local__version ruby-class="FalseClass" pluginid="rbenv"/>
+        </object>
+      </ruby-object>
+    </ruby-proxy-object>
+  </buildWrappers>
+  <executionStrategy class="hudson.matrix.DefaultMatrixExecutionStrategyImpl">
+    <runSequentially>true</runSequentially>
+  </executionStrategy>
+</matrix-project>

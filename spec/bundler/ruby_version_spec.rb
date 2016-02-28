@@ -16,6 +16,8 @@ describe RubyVersion do
       FileUtils.makedirs dir
       fn = File.join(dir, '.ruby-version')
       File.open(fn, 'w') { |f| f.puts old[i] }
+
+      FileUtils.cp File.expand_path('../../fixture/.jenkins.xml', __FILE__), dir
     end
   end
 
@@ -26,13 +28,21 @@ describe RubyVersion do
   it 'should update ruby version files in different dirs' do
     @specs.map(&:update)
 
-    read_spec_contents(@specs[0]).should == '1.9.3-p550'
-    read_spec_contents(@specs[1]).should == '2.1.4'
-    read_spec_contents(@specs[2]).should == 'jruby-1.7.16.1'
+    read_spec_contents(@specs[0], '.ruby-version').should == '1.9.3-p550'
+    read_spec_contents(@specs[1], '.ruby-version').should == '2.1.4'
+    read_spec_contents(@specs[2], '.ruby-version').should == 'jruby-1.7.16.1'
   end
 
-  def read_spec_contents(spec)
-    File.read(File.join(spec.target_dir, '.ruby-version')).chomp
+  it 'should update .jenkins.xml file' do
+    @specs.map(&:update)
+
+    read_spec_contents(@specs[0], '.jenkins.xml').should match /1.9.3-p550/
+    read_spec_contents(@specs[1], '.jenkins.xml').should match /2.1.4/
+    read_spec_contents(@specs[2], '.jenkins.xml').should match /jruby-1.7.16.1/
+  end
+
+  def read_spec_contents(spec, filename)
+    File.read(File.join(spec.target_dir, filename)).chomp
   end
 
   it 'should support ensure_clean_git option' # just need tests around this

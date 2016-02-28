@@ -40,29 +40,17 @@ module Bundler::Patch
         return
       end
 
-      lines = File.readlines(filename)
+      guts = File.read(filename)
       any_changes = false
-      lines.map! do |ln|
-        # _maybe_ this is required for a .jenkins.xml file, but this is probably
-        # pretty stupid, all this line-by-line, re-by-re crap
-        re = [@regexes].flatten.detect { |re| !ln.scan(re).empty? }
-        app_version = re ? ln.scan(re).join : nil
-        if app_version.nil?
-          ln
-        else
-          new_version = calc_new_version(app_version)
-          if app_version == new_version
-            ln
-          else
-            p({filename: filename, app_version: app_version, new_version: new_version}) if @verbose
-            raise "Nil new_version for #{app_version}" if new_version.nil?
-            any_changes = true
-            ln.sub(app_version, new_version)
-          end
-        end
+      [@regexes].flatten.each do |re|
+        any_changes = guts.gsub!(re) do |match|
+          current_version = match.scan(re).join
+          calc_new_version(current_version)
+        end || any_changes
       end
+
       if any_changes
-        File.open(filename, 'w') { |f| f.puts lines }
+        File.open(filename, 'w') { |f| f.print guts }
         verbose_puts "Updated #{filename}"
       else
         verbose_puts "No changes for #{filename}"
@@ -77,14 +65,14 @@ module Bundler::Patch
   end
 end
 
-    # def prep_git_checkout(spec)
-    #   Dir.chdir(spec.target_dir) do
-    #     status_first_line = `git status`.split("\n").first
-    #     raise "Not on master: #{status_first_line}" unless status_first_line == '# On branch master'
-    #
-    #     raise 'Uncommitted files' unless `git status --porcelain`.chomp.empty?
-    #
-    #     verbose_puts `git pull`
-    #   end
-    # end
+# def prep_git_checkout(spec)
+#   Dir.chdir(spec.target_dir) do
+#     status_first_line = `git status`.split("\n").first
+#     raise "Not on master: #{status_first_line}" unless status_first_line == '# On branch master'
+#
+#     raise 'Uncommitted files' unless `git status --porcelain`.chomp.empty?
+#
+#     verbose_puts `git pull`
+#   end
+# end
 

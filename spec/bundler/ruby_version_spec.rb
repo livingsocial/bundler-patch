@@ -49,5 +49,8 @@ describe RubyVersion do
 
   it 'should support custom file replacement definitions'
 
-  it 'should support Gemfile replacements' # existing ruby version replacement code didn't do Gemfile yet
+  # move to Gemfile spec
+  it 'should support Gemfile replacements'
+
+  it 'should not blow up if no new version is found - dump warning?'
 end

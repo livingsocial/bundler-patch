@@ -1,7 +1,8 @@
-require 'bundler/patch/version'
-
 module Bundler
   module Patch
-    # Your code goes here...
   end
 end
+
+require 'bundler/patch/updater'
+require 'bundler/patch/ruby_version'
+require 'bundler/patch/version'

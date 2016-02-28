@@ -69,37 +69,22 @@ module Bundler::Patch
       end
     end
 
+    alias_method :update, :file_replace
+
     def verbose_puts(text)
       puts text if @verbose
     end
   end
-
-  class Updater
-    attr_accessor :verbose
-
-    def initialize(update_specs=[], options={})
-      @update_specs = update_specs
-      @options = options
-    end
-
-    def update_apps
-      @update_specs.each do |spec|
-        prep_git_checkout(spec) if @options[:ensure_clean_git]
-
-        spec.file_replace
-      end
-    end
-
-    def prep_git_checkout(spec)
-      Dir.chdir(spec.target_dir) do
-        status_first_line = `git status`.split("\n").first
-        raise "Not on master: #{status_first_line}" unless status_first_line == '# On branch master'
-
-        raise 'Uncommitted files' unless `git status --porcelain`.chomp.empty?
-
-        verbose_puts `git pull`
-      end
-    end
-  end
 end
+
+    # def prep_git_checkout(spec)
+    #   Dir.chdir(spec.target_dir) do
+    #     status_first_line = `git status`.split("\n").first
+    #     raise "Not on master: #{status_first_line}" unless status_first_line == '# On branch master'
+    #
+    #     raise 'Uncommitted files' unless `git status --porcelain`.chomp.empty?
+    #
+    #     verbose_puts `git pull`
+    #   end
+    # end
 

@@ -11,8 +11,6 @@ describe RubyVersion do
                                       patched_versions: patched_versions)
     end
 
-    @u = Updater.new(@specs)
-
     dirs.each_with_index do |dir, i|
       dir = File.join(File.dirname(__FILE__), dir)
       FileUtils.makedirs dir
@@ -26,7 +24,7 @@ describe RubyVersion do
   end
 
   it 'should update ruby version files in different dirs' do
-    @u.update_apps
+    @specs.map(&:update)
 
     read_spec_contents(@specs[0]).should == '1.9.3-p550'
     read_spec_contents(@specs[1]).should == '2.1.4'
@@ -34,7 +32,7 @@ describe RubyVersion do
   end
 
   def read_spec_contents(spec)
-    File.read(spec.target_path_fn).chomp
+    File.read(File.join(spec.target_dir, '.ruby-version')).chomp
   end
 
   it 'should support ensure_clean_git option' # just need tests around this

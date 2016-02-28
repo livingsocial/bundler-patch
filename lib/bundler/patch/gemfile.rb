@@ -1,5 +1,6 @@
 module Bundler::Patch
   class Gemfile < UpdateSpec
+    # One file needs updating, with a specific gem.
     def initialize(target_file: 'Gemfile',
                    target_dir: Dir.pwd,
                    regexes: [/.*/],

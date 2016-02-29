@@ -6,11 +6,13 @@ module Bundler::Patch
       super(target_file: 'Gemfile',
             target_dir: target_dir,
             patched_versions: patched_versions)
+      # TODO: support Gem::Requirement in patched_versions
       @gems = gems
     end
 
     def update
       # should we be jacking around with this ourselves, or using Bundler code?
+      # see -> Gem::Requirement for some help most likely.
       @target_file = 'Gemfile'
       @gems.each do |gem|
         @regexes = /gem.+#{gem}.+['"](.*)['"]/

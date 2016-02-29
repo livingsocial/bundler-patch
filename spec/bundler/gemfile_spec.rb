@@ -156,6 +156,7 @@ describe Gemfile do
 
     it 'should support less than version when patched still less than spec' do
       # TODO: an interesting case. Needs special handling.
+      pending("this case will need some special handling")
       GemfileLockFixture.create(@tmpdir, {foo: '< 3'}, {foo: '2.4'}) do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['2.5.1'])
         s.update

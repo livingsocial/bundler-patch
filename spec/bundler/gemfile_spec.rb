@@ -113,7 +113,7 @@ describe Gemfile do
         s.update
         # TODO: consider 'fixing' to "gem 'foo', '>= 1.2.4'"
         File.read('Gemfile').should have_line("gem 'foo'")
-        File.read('Gemfile.lock').should have_line('foo (1.2.4)')
+        File.read('Gemfile.lock').should have_line('foo (1.2.3)') # not updating Gemfile.lock anymore
       end
     end
 
@@ -122,7 +122,7 @@ describe Gemfile do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.2.4'])
         s.update
         File.read('Gemfile').should have_line("gem 'foo', '1.2.4'")
-        File.read('Gemfile.lock').should have_line('foo (1.2.4)')
+        File.read('Gemfile.lock').should have_line('foo (1.2.3)') # not updating Gemfile.lock anymore
       end
     end
 
@@ -141,7 +141,6 @@ describe Gemfile do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
         s.update
         File.read('Gemfile').should have_line("gem 'foo', '>= 1.3.0'")
-        File.read('Gemfile.lock').should have_line('foo (1.3.0)')
       end
     end
 
@@ -150,7 +149,6 @@ describe Gemfile do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
         s.update
         File.read('Gemfile').should have_line("gem 'foo', '>= 1.3.0'")
-        File.read('Gemfile.lock').should have_line('foo (1.3.0)')
       end
     end
 
@@ -159,7 +157,6 @@ describe Gemfile do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['2.5.1'])
         s.update
         File.read('Gemfile').should have_line("gem 'foo', '< 3'")
-        File.read('Gemfile.lock').should have_line('foo (2.5.1)')
       end
     end
 
@@ -168,7 +165,6 @@ describe Gemfile do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['2.7.1'])
         s.update
         File.read('Gemfile').should have_line("gem 'foo', '~> 2.7'")
-        File.read('Gemfile.lock').should have_line('foo (2.7.1)')
       end
     end
 
@@ -179,7 +175,6 @@ describe Gemfile do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['3.1.1'])
         s.update
         File.read('Gemfile').should have_line("gem 'foo', '< 3'")
-        File.read('Gemfile.lock').should have_line('foo (2.4)')
       end
     end
 
@@ -190,7 +185,6 @@ describe Gemfile do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
         s.update
         File.read('Gemfile').should have_line("gem 'foo', '~> 1.3'")
-        File.read('Gemfile.lock').should have_line('foo (1.3.0)')
       end
     end
 
@@ -199,7 +193,6 @@ describe Gemfile do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
         s.update
         File.read('Gemfile').should have_line("gem 'foo', '~> 1.3.0'")
-        File.read('Gemfile.lock').should have_line('foo (1.3.0)')
       end
     end
 
@@ -212,10 +205,6 @@ describe Gemfile do
     # gem '  foo ', '  >=  1.4    '
     # gem '  foo ', '>=1.4'
     # gem 'foo','>=1.2'
-  end
-
-  describe 'Gemfile.lock only' do
-
   end
 
   describe 'Insecure sources' do

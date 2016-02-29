@@ -29,13 +29,6 @@ module Bundler::Patch
           end
         end
       end
-
-      # updating Gemfile.lock is pointless, have to do a bundle update anyway.
-      @target_file = 'Gemfile.lock'
-      @gems.each do |gem|
-        @regexes = /#{gem}.+\((.*)\)/
-        file_replace
-      end
     end
 
     def update_to_new_pessimistic_version(match, prefix)

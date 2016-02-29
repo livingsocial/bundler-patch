@@ -3,8 +3,8 @@ require_relative '../spec_helper'
 require 'fileutils'
 
 class GemfileLockFixture
-  def self.create(dir, gems={})
-    fix = self.new(dir, gems).tap do |fix|
+  def self.create(dir, gems={}, locks={})
+    fix = self.new(dir, gems, locks).tap do |fix|
       fix.create_gemfile
       fix.create_gemfile_lock
     end
@@ -16,7 +16,7 @@ class GemfileLockFixture
   end
 
   def self.create_with_content(dir, content)
-    fix = self.new(dir, []).tap do |fix|
+    fix = self.new(dir, {}).tap do |fix|
       fix.create_gemfile_content(content)
     end
     if block_given?
@@ -26,18 +26,21 @@ class GemfileLockFixture
     end
   end
 
-  attr_reader :dir, :gems
+  attr_reader :dir, :gems, :locks
 
-  def initialize(dir, gems)
+  def initialize(dir, gems, locks={})
     @dir = dir
     @gems = gems
+    @locks = locks
   end
 
   def create_gemfile
     lines = []
     lines << "source 'https://rubygems.org'"
     @gems.each do |name, version|
-      lines << "gem '#{name}', '#{version}'"
+      line = "gem '#{name}'"
+      line << ", '#{version}'" if version
+      lines << line
     end
     write_lines(lines, 'Gemfile')
     File.join(@dir, 'Gemfile')
@@ -54,7 +57,8 @@ class GemfileLockFixture
     lines << '  remote: https://rubygems.org/'
     lines << '  specs:'
     @gems.each do |name, version|
-      lines << "    #{name} (#{version})"
+      v = @locks[name] || version
+      lines << "    #{name} (#{v})"
     end
     lines << ''
     lines << 'PLATFORMS'
@@ -74,33 +78,51 @@ class GemfileLockFixture
   end
 end
 
+RSpec::Matchers.define :have_line do |expected|
+  match do |actual|
+    actual.split(/\n/).map(&:strip).include?(expected)
+  end
+  failure_message do |actual|
+    "expected line <#{expected}> would be in:\n#{actual}"
+  end
+end
 
 describe Gemfile do
+  before do
+    @tmpdir = Dir.mktmpdir
+  end
+
+  after do
+    FileUtils.remove_entry_secure @tmpdir
+  end
+
+  def dump
+    puts "---Gemfile#{'-' * 80}"
+    puts File.read('Gemfile')
+    puts
+    puts "---Gemfile.lock#{'-' * 75}"
+    puts File.read('Gemfile.lock')
+  end
+
   describe 'Gemfile definition' do
-    before do
-      @tmpdir = Dir.mktmpdir
-    end
-
-    after do
-      FileUtils.remove_entry_secure @tmpdir
-    end
-
-    def dump
-      puts '*' * 80
-      puts File.read('Gemfile')
-      puts '*' * 80
-      puts File.read('Gemfile.lock')
-    end
-
     # cases based on http://guides.rubygems.org/patterns/#pessimistic-version-constraint
 
-    it 'should support no version'
+    it 'should support no version' do
+      GemfileLockFixture.create(@tmpdir, {foo: nil}, {foo: '1.2.3'}) do
+        s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.2.4'])
+        s.update
+        # TODO: consider 'fixing' to "gem 'foo', '>= 1.2.4'"
+        File.read('Gemfile').should have_line("gem 'foo'")
+        File.read('Gemfile.lock').should have_line('foo (1.2.4)')
+      end
+    end
 
     it 'should support exact version' do
       GemfileLockFixture.create(@tmpdir, {foo: '1.2.3'}) do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.2.4'])
         s.update
-        File.read('Gemfile').split(/\n/)[-1].should == "gem 'foo', '1.2.4'"
+        File.read('Gemfile').should have_line("gem 'foo', '1.2.4'")
+        File.read('Gemfile.lock').should have_line('foo (1.2.4)')
       end
     end
 
@@ -129,6 +151,10 @@ describe Gemfile do
     it 'should support source block'
 
     it 'should support source inline'
+  end
+
+  describe '.gemspec files' do
+    it 'should support .gemspec files too'
   end
 end
 

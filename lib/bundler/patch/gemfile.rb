@@ -1,6 +1,5 @@
 module Bundler::Patch
   class Gemfile < UpdateSpec
-    # One file needs updating, with a specific gem.
     def initialize(target_dir: Dir.pwd,
                    gems: [],
                    patched_versions: [])
@@ -11,8 +10,15 @@ module Bundler::Patch
     end
 
     def update
+      @target_file = 'Gemfile'
       @gems.each do |gem|
         @regexes = /gem.+#{gem}.+['"](.*)['"]/
+        file_replace
+      end
+
+      @target_file = 'Gemfile.lock'
+      @gems.each do |gem|
+        @regexes = /#{gem}.+\((.*)\)/
         file_replace
       end
     end

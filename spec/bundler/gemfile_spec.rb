@@ -127,11 +127,12 @@ describe Gemfile do
     end
 
     it 'should support exact version across major rev' do
+      # TODO: major rev usually means breaking changes, so stay put. output warning?
       GemfileLockFixture.create(@tmpdir, {foo: '1.2.3'}) do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['2.0.0'])
         s.update
-        File.read('Gemfile').should have_line("gem 'foo', '2.0.0'")
-        File.read('Gemfile.lock').should have_line('foo (2.0.0)')
+        File.read('Gemfile').should have_line("gem 'foo', '1.2.3'")
+        File.read('Gemfile.lock').should have_line('foo (1.2.3)')
       end
     end
 
@@ -154,6 +155,7 @@ describe Gemfile do
     end
 
     it 'should support less than version when patched still less than spec' do
+      # TODO: an interesting case. Needs special handling.
       GemfileLockFixture.create(@tmpdir, {foo: '< 3'}, {foo: '2.4'}) do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['2.5.1'])
         s.update
@@ -172,11 +174,12 @@ describe Gemfile do
     end
 
     it 'should support less than version when patched greater than spec and across major rev' do
+      # TODO: major rev usually means breaking changes, so stay put. output warning?
       GemfileLockFixture.create(@tmpdir, {foo: '< 3'}, {foo: '2.4'}) do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['3.1.1'])
         s.update
-        File.read('Gemfile').should have_line("gem 'foo', '~> 3'")
-        File.read('Gemfile.lock').should have_line('foo (3.1.1)')
+        File.read('Gemfile').should have_line("gem 'foo', '< 3'")
+        File.read('Gemfile.lock').should have_line('foo (2.4)')
       end
     end
 

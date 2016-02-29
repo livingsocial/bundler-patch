@@ -28,11 +28,10 @@ describe UpdateSpec do
     end
 
     describe 'gem versions' do
-      it 'should handle major version upgrade' do
-        # TODO: currently a bug since original code written for patching Ruby version
-        # and going up a major rev was never needed.
+      it 'should stay put on major version upgrade' do
+        # major version should mean breaking changes, so don't do it.
         @u = UpdateSpec.new(patched_versions: %w(3.1.1))
-        @u.calc_new_version('2.4').should == '3.1.1'
+        @u.calc_new_version('2.4').should == nil
       end
     end
   end

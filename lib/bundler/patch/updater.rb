@@ -16,22 +16,16 @@ module Bundler::Patch
       File.join(@target_dir, @target_file)
     end
 
-    # this would prolly be educational to play ruby golf with.
-    # ... or replace with Gem::Version ... let it do the work. :o
     def calc_new_version(old_version)
-      re_bit = /\d+/
-      segments = 3
-      until segments == 0 do
-        matches = @patched_versions.select do |v|
-          re = ".*?#{([re_bit] * segments).join('\.')}"
-          a, b = [v.scan(/#{re}/).compact.flatten.first, old_version.scan(/#{re}/).compact.flatten.first]
-          !a.nil? && (a == b)
-        end
-        # final or clause here is a total hack
-        return matches.first if matches.length == 1 || (matches.length > 0 && segments == 1)
-        segments -= 1
-      end
-      nil
+      old = old_version
+      all = @patched_versions.dup
+      return old_version if all.include?(old)
+
+      all << old
+      all.sort!
+      all.delete_if { |v| v.split(/\./).first != old.split(/\./).first } # strip non-matching major revs
+      res = all[all.index(old) + 1]
+      res ? res.to_s : nil
     end
 
     def file_replace

@@ -36,21 +36,17 @@ describe RubyVersion do
   it 'should update .jenkins.xml file' do
     @specs.map(&:update)
 
-    read_spec_contents(@specs[0], '.jenkins.xml').should match /1.9.3-p550/
-    read_spec_contents(@specs[1], '.jenkins.xml').should match /2.1.4/
-    read_spec_contents(@specs[2], '.jenkins.xml').should match /jruby-1.7.16.1/
+    read_spec_contents(@specs[0], '.jenkins.xml').should match /#{Regexp.escape('<string>1.9.3-p550</string>')}/
+    read_spec_contents(@specs[1], '.jenkins.xml').should match /#{Regexp.escape('<string>2.1.4</string>')}/
+    read_spec_contents(@specs[2], '.jenkins.xml').should match /#{Regexp.escape('<string>jruby-1.7.16.1</string>')}/
   end
 
   def read_spec_contents(spec, filename)
     File.read(File.join(spec.target_dir, filename)).chomp
   end
 
-  it 'should support ensure_clean_git option' # just need tests around this
-
   it 'should support custom file replacement definitions'
-
-  # move to Gemfile spec
-  it 'should support Gemfile replacements'
+  # should be able to extend RubyVersion.files Hash
 
   it 'should not blow up if no new version is found - dump warning?'
 end

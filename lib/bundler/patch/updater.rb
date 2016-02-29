@@ -45,7 +45,8 @@ module Bundler::Patch
       [@regexes].flatten.each do |re|
         any_changes = guts.gsub!(re) do |match|
           current_version = match.scan(re).join
-          calc_new_version(current_version)
+          new_version = calc_new_version(current_version)
+          new_version ? match.sub(current_version, new_version) : match
         end || any_changes
       end
 

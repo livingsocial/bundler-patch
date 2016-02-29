@@ -44,9 +44,11 @@ module Bundler::Patch
       any_changes = false
       [@regexes].flatten.each do |re|
         any_changes = guts.gsub!(re) do |match|
-          current_version = match.scan(re).join
-          new_version = calc_new_version(current_version)
-          new_version ? match.sub(current_version, new_version) : match
+          if block_given?
+            yield match, re
+          else
+            update_to_new_version(match, re)
+          end
         end || any_changes
       end
 
@@ -56,6 +58,12 @@ module Bundler::Patch
       else
         verbose_puts "No changes for #{filename}"
       end
+    end
+
+    def update_to_new_version(match, re)
+      current_version = match.scan(re).join
+      new_version = calc_new_version(current_version)
+      new_version ? match.sub(current_version, new_version) : match
     end
 
     alias_method :update, :file_replace

@@ -126,15 +126,39 @@ describe Gemfile do
       end
     end
 
-    it 'should support greater than version'
+    it 'should support greater than version' do
+      GemfileLockFixture.create(@tmpdir, {foo: '> 1.2'}, {foo: '1.2.5'}) do
+        s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
+        s.update
+        File.read('Gemfile').should have_line("gem 'foo', '>= 1.3.0'")
+        File.read('Gemfile.lock').should have_line('foo (1.3.0)')
+      end
+    end
 
-    it 'should support greater than or equal version'
+    it 'should support greater than or equal version' do
+      GemfileLockFixture.create(@tmpdir, {foo: '>=1.2'}, {foo: '1.2.5'}) do
+        s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
+        s.update
+        File.read('Gemfile').should have_line("gem 'foo', '>= 1.3.0'")
+        File.read('Gemfile.lock').should have_line('foo (1.3.0)')
+      end
+    end
+
+    it 'should support less than version'
+
+    it 'should support less than equal to version' # illegal? not documented
 
     it 'should support twiddle-wakka'
 
     it 'should support twiddle-wakka long form'
 
     it 'should support twiddle-wakka compound form'
+
+    it 'should be okay with whitespace variations'
+    # various forms here, dunno what's legal?
+    # gem '  foo ', '  >=  1.4    '
+    # gem '  foo ', '>=1.4'
+    # gem 'foo','>=1.2'
   end
 
   describe 'Gemfile.lock only' do

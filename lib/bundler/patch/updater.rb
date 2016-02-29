@@ -24,8 +24,7 @@ module Bundler::Patch
       all << old
       all.sort!
       all.delete_if { |v| v.split(/\./).first != old.split(/\./).first } # strip non-matching major revs
-      res = all[all.index(old) + 1]
-      res ? res.to_s : nil
+      all[all.index(old) + 1]
     end
 
     def file_replace

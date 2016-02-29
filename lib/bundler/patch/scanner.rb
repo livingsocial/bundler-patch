@@ -24,6 +24,10 @@ module Bundler::Patch
       end
 
       specs.map(&:update)
+      gems = specs.map(&:gems).flatten
+      cmd = "bundle update #{gems.uniq.join(' ')}"
+      puts cmd
+      system cmd
     end
   end
 end

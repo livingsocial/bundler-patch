@@ -35,4 +35,6 @@ describe UpdateSpec do
       end
     end
   end
+
+  it 'should not dump output on test run'
 end

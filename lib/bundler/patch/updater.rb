@@ -57,7 +57,11 @@ module Bundler::Patch
     def update_to_new_version(match, re)
       current_version = match.scan(re).join
       new_version = calc_new_version(current_version)
-      new_version ? match.sub(current_version, new_version) : match
+      if new_version
+        match.sub(current_version, new_version).tap { |s| puts "Updating to #{s}" }
+      else
+        match
+      end
     end
 
     alias_method :update, :file_replace

@@ -1,5 +1,7 @@
 module Bundler::Patch
   class Gemfile < UpdateSpec
+    attr_reader :gems # TODO: this will like never be used as an array, right?
+
     def initialize(target_dir: Dir.pwd,
                    gems: [],
                    patched_versions: [])
@@ -28,7 +30,7 @@ module Bundler::Patch
         end
       end
 
-      # should we be jacking around with this ourselves, or using Bundler code?
+      # updating Gemfile.lock is pointless, have to do a bundle update anyway.
       @target_file = 'Gemfile.lock'
       @gems.each do |gem|
         @regexes = /#{gem}.+\((.*)\)/
@@ -48,7 +50,11 @@ module Bundler::Patch
       end
 
       contents_in_quotes = match.scan(/,.*['"](.*)['"]/).join
-      new_version ? match.sub(contents_in_quotes, "#{prefix} #{new_version}") : match
+      if new_version
+        match.sub(contents_in_quotes, "#{prefix} #{new_version}").tap { |s| "Updating to #{s}" }
+      else
+        match
+      end
     end
   end
 end

@@ -126,6 +126,15 @@ describe Gemfile do
       end
     end
 
+    it 'should support exact version across major rev' do
+      GemfileLockFixture.create(@tmpdir, {foo: '1.2.3'}) do
+        s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['2.0.0'])
+        s.update
+        File.read('Gemfile').should have_line("gem 'foo', '2.0.0'")
+        File.read('Gemfile.lock').should have_line('foo (2.0.0)')
+      end
+    end
+
     it 'should support greater than version' do
       GemfileLockFixture.create(@tmpdir, {foo: '> 1.2'}, {foo: '1.2.5'}) do
         s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
@@ -144,11 +153,52 @@ describe Gemfile do
       end
     end
 
-    it 'should support less than version'
+    it 'should support less than version when patched still less than spec' do
+      GemfileLockFixture.create(@tmpdir, {foo: '< 3'}, {foo: '2.4'}) do
+        s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['2.5.1'])
+        s.update
+        File.read('Gemfile').should have_line("gem 'foo', '< 3'")
+        File.read('Gemfile.lock').should have_line('foo (2.5.1)')
+      end
+    end
+
+    it 'should support less than version when patched greater than spec and across minor rev' do
+      GemfileLockFixture.create(@tmpdir, {foo: '< 2.6'}, {foo: '2.4'}) do
+        s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['2.7.1'])
+        s.update
+        File.read('Gemfile').should have_line("gem 'foo', '~> 2.7'")
+        File.read('Gemfile.lock').should have_line('foo (2.7.1)')
+      end
+    end
+
+    it 'should support less than version when patched greater than spec and across major rev' do
+      GemfileLockFixture.create(@tmpdir, {foo: '< 3'}, {foo: '2.4'}) do
+        s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['3.1.1'])
+        s.update
+        File.read('Gemfile').should have_line("gem 'foo', '~> 3'")
+        File.read('Gemfile.lock').should have_line('foo (3.1.1)')
+      end
+    end
 
     it 'should support less than equal to version' # illegal? not documented
 
-    it 'should support twiddle-wakka'
+    it 'should support twiddle-wakka with two segments' do
+      GemfileLockFixture.create(@tmpdir, {foo: '~>1.2'}, {foo: '1.2.5'}) do
+        s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
+        s.update
+        File.read('Gemfile').should have_line("gem 'foo', '~> 1.3'")
+        File.read('Gemfile.lock').should have_line('foo (1.3.0)')
+      end
+    end
+
+    it 'should support twiddle-wakka with three segments' do
+      GemfileLockFixture.create(@tmpdir, {foo: '~>1.2.1'}, {foo: '1.2.5'}) do
+        s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
+        s.update
+        File.read('Gemfile').should have_line("gem 'foo', '~> 1.3.0'")
+        File.read('Gemfile.lock').should have_line('foo (1.3.0)')
+      end
+    end
 
     it 'should support twiddle-wakka long form'
 

@@ -17,6 +17,7 @@ module Bundler::Patch
     end
 
     # this would prolly be educational to play ruby golf with.
+    # ... or replace with Gem::Version ... let it do the work. :o
     def calc_new_version(old_version)
       re_bit = /\d+/
       segments = 3

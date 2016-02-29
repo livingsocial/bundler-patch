@@ -28,6 +28,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_dependency 'bundler-audit'
+  spec.add_dependency 'boson'
 
   spec.add_development_dependency 'bundler', '~> 1.10'
   spec.add_development_dependency 'pry'

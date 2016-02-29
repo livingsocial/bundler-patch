@@ -17,7 +17,7 @@ module Bundler::Patch
       # see -> Gem::Requirement for some help most likely.
       @target_file = 'Gemfile'
       @gems.each do |gem|
-        @regexes = /gem.+#{gem}.+['"](.*)['"]/
+        @regexes = /gem.+['"]#{gem}['"].+['"](.*)['"]/
         file_replace do |match, re|
           case match
           when /[^~]>/

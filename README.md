@@ -16,7 +16,34 @@ your brain, there's some busy work here the monster inside your computer could a
 
 ## Usage
 
-TODO: Write usage instructions here
+To output the list of detected vulnerabilities in the current project:
+
+    $ bundle-patch scan
+
+To specify the path to an optional advisory database:
+
+    $ bundle-patch scan -a ~/.my-custom-db
+
+*NOTE*: `gems` will be appended to the end of the path.
+
+To attempt to patch the detected vulnerabilities, use the `patch` command instead of `scan`:
+
+    $ bundle-patch patch
+
+Same options apply.
+
+For help:
+
+    $ bundle-patch help
+    $ bundle-patch help scan
+    $ bundle-patch help patch
+
+### Troubleshooting
+
+All this tool does is output a `bundle update gem1 gem2 ...` command, so most problems with getting the update to work
+are usual Bundler problems. Check for any dependencies that depend on a gem that needs to be updated and has a
+constraining requirement that won't allow the newer gem.
+
 
 ## Development
 

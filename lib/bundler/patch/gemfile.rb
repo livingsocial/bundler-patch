@@ -12,6 +12,10 @@ module Bundler::Patch
       @gems = gems
     end
 
+    def to_s
+      "#{@gems.join} #{patched_versions}"
+    end
+
     def update
       # should we be jacking around with this ourselves, or using Bundler code?
       # see -> Gem::Requirement for some help most likely.

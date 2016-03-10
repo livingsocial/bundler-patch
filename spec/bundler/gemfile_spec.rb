@@ -3,7 +3,7 @@ require_relative '../spec_helper'
 require 'fileutils'
 
 class GemfileLockFixture
-  def self.create(dir, gems={}, locks={})
+  def self.create(dir, gems={}, locks=nil)
     fix = self.new(dir, gems, locks).tap do |fix|
       fix.create_gemfile
       fix.create_gemfile_lock
@@ -15,20 +15,9 @@ class GemfileLockFixture
     end
   end
 
-  def self.create_with_content(dir, content)
-    fix = self.new(dir, {}).tap do |fix|
-      fix.create_gemfile_content(content)
-    end
-    if block_given?
-      Dir.chdir fix.dir do
-        yield fix.dir
-      end
-    end
-  end
-
   attr_reader :dir, :gems, :locks
 
-  def initialize(dir, gems, locks={})
+  def initialize(dir, gems, locks=nil)
     @dir = dir
     @gems = gems
     @locks = locks
@@ -46,31 +35,11 @@ class GemfileLockFixture
     File.join(@dir, 'Gemfile')
   end
 
-  def create_gemfile_content(content)
-    # split newline is dorky, but hey
-    write_lines(content.split("\n"), 'Gemfile')
-  end
-
   def create_gemfile_lock
-    lines = []
-    lines << 'GEM'
-    lines << '  remote: https://rubygems.org/'
-    lines << '  specs:'
-    @gems.each do |name, version|
-      v = @locks[name] || version
-      lines << "    #{name} (#{v})"
-    end
-    lines << ''
-    lines << 'PLATFORMS'
-    lines << '  ruby'
-    lines << ''
-    lines << 'DEPENDENCIES'
-    @gems.each do |name, version|
-      lines << "  #{name}!"
-    end
-    lines
-    write_lines(lines, 'Gemfile.lock')
-    File.join(@dir, 'Gemfile.lock')
+    bf = BundlerFixture.new(dir: @dir)
+    bf.create_lockfile(gem_specs:
+      (@locks || @gems).map { |name, version| bf.create_spec(name.to_s, version) }
+    )
   end
 
   def write_lines(lines, filename)

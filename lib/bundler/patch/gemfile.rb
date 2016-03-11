@@ -17,27 +17,42 @@ module Bundler::Patch
     end
 
     def update
-      # should we be jacking around with this ourselves, or using Bundler code?
-      # see -> Gem::Requirement for some help most likely.
+      # Bundler evals the whole Gemfile in Bundler::Dsl.evaluate
+      # It has a few magics to parse all possible calls to `gem`
+      # command. It doesn't have anything to output the entire
+      # Gemfile, I don't think it ever does that. (There is code
+      # to init a Gemfile from a gemspec, but it doesn't look
+      # like it's intended to recreate one just evaled - I don't
+      # see any code that would handle additional sources or
+      # groups - see lib/bundler/rubygems_ext.rb #to_gemfile).
+      #
+      # So without something in Bundler that round-trips from
+      # Gemfile back to disk and maintains integrity, then we
+      # couldn't re-use it to make modifications to the Gemfile
+      # like we'd want to, so we'll do this ourselves.
+      #
+      # We'll still instance_eval the gem line though, to properly
+      # handle the various options and possible multiple reqs.
       @target_file = 'Gemfile'
       @gems.each do |gem|
-        @regexes = /gem.+['"]#{gem}['"].+['"](.*)['"]/
+        @regexes = /^\s*gem.*$/
         file_replace do |match, re|
-          case match
-          when /[^~]>/
-            update_to_new_pessimistic_version(match, '>=')
-          when /</, /~>/
-            update_to_new_pessimistic_version(match, '~>')
-          else
-            update_to_new_version(match, re)
-          end
+          dep = instance_eval(match)
+          new_prefix = case dep.requirement.requirements.first.first
+                       when '>', '>='
+                         '>= '
+                       when '<', '~>'
+                         '~> '
+                       else
+                         ''
+                       end
+          update_to_new_gem_version(match, dep, new_prefix)
         end
       end
     end
 
-    def update_to_new_pessimistic_version(match, prefix)
-      just_version_re = /\d\S*\b/
-      current_version = match.scan(just_version_re).join
+    def update_to_new_gem_version(match, dep, prefix)
+      current_version = dep.requirement.requirements.first.last.to_s
       new_version = calc_new_version(current_version)
 
       if new_version && prefix =~ /~/
@@ -46,12 +61,30 @@ module Bundler::Patch
         new_version = new_version.split(/\./)[0..(count-1)].join('.')
       end
 
+      # TODO: this isn't going to hold up with multiple requirements
+      #       or complicated gem commands with options and all
       contents_in_quotes = match.scan(/,.*['"](.*)['"]/).join
       if new_version
-        match.sub(contents_in_quotes, "#{prefix} #{new_version}").tap { |s| "Updating to #{s}" }
+        match.sub(contents_in_quotes, "#{prefix}#{new_version}").tap { |s| "Updating to #{s}" }
       else
         match
       end
+    end
+
+    private
+
+    # See Bundler::Dsl for reference
+    def gem(name, *args)
+      # we're not concerned with options here.
+      _options = args.last.is_a?(Hash) ? args.pop.dup : {}
+      version = args || ['>= 0']
+
+      # there is a normalize_options step that DOES involve
+      # the args captured in version for `git` and `path`
+      # sources that's skipped here ... need to dig into that
+      # at some point.
+
+      Gem::Dependency.new(name, version)
     end
   end
 end

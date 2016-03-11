@@ -185,7 +185,16 @@ describe Gemfile do
       end
 
       # long form is an equivalent twiddle-wakka
-      it 'should support twiddle-wakka long form' do
+      it 'should support twiddle-wakka long form leaving existing if patch within existing requirement' do
+        # equivalent to ~> 1.2.0
+        GemfileLockFixture.create(@tmpdir, {foo: ['>= 1.2.0', '< 1.3.0']}, {foo: '1.2.5'}) do
+          s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.2.7'])
+          s.update
+          File.read('Gemfile').should have_line("gem 'foo', '>= 1.2.0', '< 1.3.0'")
+        end
+      end
+
+      it 'should support twiddle-wakka long form replacing req if patch outside existing requirement' do
         # equivalent to ~> 1.2.0
         GemfileLockFixture.create(@tmpdir, {foo: ['>= 1.2.0', '< 1.3.0']}, {foo: '1.2.5'}) do
           s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])

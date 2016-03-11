@@ -35,23 +35,25 @@ module Bundler::Patch
       # handle the various options and possible multiple reqs.
       @target_file = 'Gemfile'
       @gems.each do |gem|
-        @regexes = /^\s*gem.*$/
+        @regexes = /^\s*gem.*['"]#{gem}['"].*$/
         file_replace do |match, re|
-          dep = instance_eval(match)
-          new_prefix = case dep.requirement.requirements.first.first
-                       when '>', '>='
-                         '>= '
-                       when '<', '<=', '~>'
-                         '~> '
-                       else
-                         ''
-                       end
-          update_to_new_gem_version(match, dep, new_prefix)
+          update_to_new_gem_version(match)
         end
       end
     end
 
-    def update_to_new_gem_version(match, dep, prefix)
+    def update_to_new_gem_version(match)
+      dep = instance_eval(match)
+
+      prefix = case dep.requirement.requirements.first.first
+               when '>', '>='
+                 '>= '
+               when '<', '<=', '~>'
+                 '~> '
+               else
+                 ''
+               end
+
       current_version = dep.requirement.requirements.first.last.to_s
       new_version = calc_new_version(current_version)
 
@@ -61,8 +63,6 @@ module Bundler::Patch
         new_version = new_version.split(/\./)[0..(count-1)].join('.')
       end
 
-      # TODO: this isn't going to hold up with multiple requirements
-      #       or complicated gem commands with options and all
       contents_in_quotes = match.scan(/,.*['"](.*)['"]/).join
       if new_version
         match.sub(contents_in_quotes, "#{prefix}#{new_version}").tap { |s| "Updating to #{s}" }

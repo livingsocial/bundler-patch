@@ -41,7 +41,7 @@ module Bundler::Patch
           new_prefix = case dep.requirement.requirements.first.first
                        when '>', '>='
                          '>= '
-                       when '<', '~>'
+                       when '<', '<=', '~>'
                          '~> '
                        else
                          ''

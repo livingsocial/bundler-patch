@@ -26,9 +26,9 @@ class GemfileLockFixture
   def create_gemfile
     lines = []
     lines << "source 'https://rubygems.org'"
-    @gems.each do |name, version|
+    @gems.each do |name, versions|
       line = "gem '#{name}'"
-      line << ", '#{version}'" if version
+      Array(versions).each { |version| line << ", '#{version}'" } if versions
       lines << line
     end
     write_lines(lines, 'Gemfile')
@@ -159,7 +159,14 @@ describe Gemfile do
         end
       end
 
-      it 'should support less than equal to version' # illegal? not documented
+      it 'should support less than equal to version' do
+        # `<=` operator isn't documented on the web, but it is supported in the code
+        GemfileLockFixture.create(@tmpdir, {foo: '<= 2.6'}, {foo: '2.4'}) do
+          s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['2.7.1'])
+          s.update
+          File.read('Gemfile').should have_line("gem 'foo', '~> 2.7'")
+        end
+      end
 
       it 'should support twiddle-wakka with two segments' do
         GemfileLockFixture.create(@tmpdir, {foo: '~>1.2'}, {foo: '1.2.5'}) do
@@ -177,7 +184,15 @@ describe Gemfile do
         end
       end
 
-      it 'should support twiddle-wakka long form'
+      # long form is an equivalent twiddle-wakka
+      it 'should support twiddle-wakka long form' do
+        # equivalent to ~> 1.2.0
+        GemfileLockFixture.create(@tmpdir, {foo: ['>= 1.2.0', '< 1.3.0']}, {foo: '1.2.5'}) do
+          s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
+          s.update
+          File.read('Gemfile').should have_line("gem 'foo', '~> 1.3'")
+        end
+      end
 
       it 'should support twiddle-wakka compound form'
 

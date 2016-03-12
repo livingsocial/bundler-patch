@@ -35,7 +35,7 @@ module Bundler::Patch
       # handle the various options and possible multiple reqs.
       @target_file = 'Gemfile'
       @gems.each do |gem|
-        @regexes = /^\s*gem.*['"]#{gem}['"].*$/
+        @regexes = /^\s*gem.*['"]\s*#{gem}\s*['"].*$/
         file_replace do |match, re|
           update_to_new_gem_version(match)
         end
@@ -50,6 +50,15 @@ module Bundler::Patch
 
       current_version = req.requirements.first.last.to_s
       new_version = calc_new_version(current_version)
+
+      # return match if req.satisfied_by?(Gem::Version.new(new_version))
+      #
+      # TODO: This ^^ could be acceptable, slightly less complex, to not ever
+      # touch the requirement if it already covers the patched version.
+      # But I can't recall Bundler behavior in all these cases, to ensure
+      # at least the patch version is updated and/or we would like to be as
+      # conservative as possible in updating - can't recall how much influence
+      # we have over `bundle update` (not much)
 
       return match if req.compound? && req.satisfied_by?(Gem::Version.new(new_version))
 
@@ -70,7 +79,7 @@ module Bundler::Patch
 
     def requirements_args_regexp
       ops = Gem::Requirement::OPS.keys.join "|"
-      re = /(\s*['\"](#{ops})?\s*#{Gem::Version::VERSION_PATTERN}\s*['"],*)+/
+      re = /(\s*['\"]\s*(#{ops})?\s*#{Gem::Version::VERSION_PATTERN}\s*['"],*)+/
     end
 
     # See Bundler::Dsl for reference

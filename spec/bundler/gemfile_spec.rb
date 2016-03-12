@@ -190,6 +190,15 @@ describe Gemfile do
         GemfileLockFixture.create(@tmpdir, {foo: ['>= 1.2.0', '< 1.3.0']}, {foo: '1.2.5'}) do
           s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.2.7'])
           s.update
+          # TODO: this is inconsistent, should probably change to ~> 1.2.7. Other cases
+          # change the Gemfile to ensure it won't ever load a lower one. ... Except
+          # Bundler does take care of that doesn't it?
+          #
+          # But, the case of '>= 1.2.0', '< 1.4.2' -- would have to be changed to
+          #                  '>= 1.2.7', '< 1.4.2'
+          #
+          # Compound forms aren't common, and supporting a more intelligent upgrade when the
+          # patch is still inside the req is probably not worth the trouble.
           File.read('Gemfile').should have_line("gem 'foo', '>= 1.2.0', '< 1.3.0'")
         end
       end
@@ -203,13 +212,29 @@ describe Gemfile do
         end
       end
 
-      it 'should support twiddle-wakka compound form'
+      it 'should support compound with twiddle-wakka if patch inside existing req' do
+        GemfileLockFixture.create(@tmpdir, {foo: ['>= 1.2.1.2', '~> 1.2.1']}, {foo: '1.2.1.3'}) do
+          s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.2.4'])
+          s.update
+          File.read('Gemfile').should have_line("gem 'foo', '>= 1.2.1.2', '~> 1.2.1'")
+        end
+      end
 
-      it 'should be okay with whitespace variations'
-      # various forms here, dunno what's legal?
-      # gem '  foo ', '  >=  1.4    '
-      # gem '  foo ', '>=1.4'
-      # gem 'foo','>=1.2'
+      it 'should support compound with twiddle-wakka if patch outside existing req' do
+        GemfileLockFixture.create(@tmpdir, {foo: ['>= 1.2.1.2', '~> 1.2.1']}, {foo: '1.2.1.3'}) do
+          s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
+          s.update
+          File.read('Gemfile').should have_line("gem 'foo', '~> 1.3.0'")
+        end
+      end
+
+      it 'should be okay with whitespace variations' do
+        GemfileLockFixture.create(@tmpdir, {' foo ': ' >   1.2 '}, {' foo ': ' 1.2.5    '}) do
+          s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
+          s.update
+          File.read('Gemfile').should have_line("gem ' foo ', '>= 1.3.0'")
+        end
+      end
     end
 
     describe 'Insecure sources' do

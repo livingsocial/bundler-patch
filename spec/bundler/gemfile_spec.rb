@@ -199,7 +199,7 @@ describe Gemfile do
         GemfileLockFixture.create(@tmpdir, {foo: ['>= 1.2.0', '< 1.3.0']}, {foo: '1.2.5'}) do
           s = Gemfile.new(target_dir: Dir.pwd, gems: ['foo'], patched_versions: ['1.3.0'])
           s.update
-          File.read('Gemfile').should have_line("gem 'foo', '~> 1.3'")
+          File.read('Gemfile').should have_line("gem 'foo', '~> 1.3.0'")
         end
       end
 

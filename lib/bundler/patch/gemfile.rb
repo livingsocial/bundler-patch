@@ -44,34 +44,34 @@ module Bundler::Patch
 
     def update_to_new_gem_version(match)
       dep = instance_eval(match)
+      req = dep.requirement
 
-      prefix = case dep.requirement.requirements.first.first
-               when '>', '>='
-                 '>= '
-               when '<', '<=', '~>'
-                 '~> '
-               else
-                 ''
-               end
+      prefix = req.exact? ? '' : req.specific? ? '~> ' : '>= '
 
-      current_version = dep.requirement.requirements.first.last.to_s
+      current_version = req.requirements.first.last.to_s
       new_version = calc_new_version(current_version)
 
+      return match if req.compound? && req.satisfied_by?(Gem::Version.new(new_version))
+
       if new_version && prefix =~ /~/
-        # match segments
+        # match segments. if started with ~> 1.2 and new_version is 3 segments, replace with 2 segments.
         count = current_version.split(/\./).length
         new_version = new_version.split(/\./)[0..(count-1)].join('.')
       end
 
-      contents_in_quotes = match.scan(/,.*['"](.*)['"]/).join
       if new_version
-        match.sub(contents_in_quotes, "#{prefix}#{new_version}").tap { |s| "Updating to #{s}" }
+        match.sub(requirements_args_regexp, " '#{prefix}#{new_version}'").tap { |s| "Updating to #{s}" }
       else
         match
       end
     end
 
     private
+
+    def requirements_args_regexp
+      ops = Gem::Requirement::OPS.keys.join "|"
+      re = /(\s*['\"](#{ops})?\s*#{Gem::Version::VERSION_PATTERN}\s*['"],*)+/
+    end
 
     # See Bundler::Dsl for reference
     def gem(name, *args)
@@ -86,5 +86,11 @@ module Bundler::Patch
 
       Gem::Dependency.new(name, version)
     end
+  end
+end
+
+class Gem::Requirement
+  def compound?
+    @requirements.length > 1
   end
 end

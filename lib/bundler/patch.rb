@@ -1,3 +1,5 @@
+require 'bundler'
+
 module Bundler
   module Patch
   end

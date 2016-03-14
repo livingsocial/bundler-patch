@@ -34,9 +34,10 @@ module Bundler::Patch
       if gems.empty?
         puts @no_vulns_message
       else
-        cmd = "bundle update #{gems.uniq.join(' ')}"
-        puts cmd
-        system cmd
+        gems_to_update = gems.uniq
+        puts "Updating '#{gems_to_update.join(" ")}' to address vulnerabilities"
+        Bundler.ui = Bundler::UI::Shell.new
+        Bundler::CLI::Update.new({}, gems_to_update).run
       end
     end
 

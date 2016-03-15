@@ -37,8 +37,8 @@ class GemfileLockFixture
 
   def create_gemfile_lock
     bf = BundlerFixture.new(dir: @dir)
-    specs = (@locks || @gems).map { |name, version| bf.create_spec(name.to_s, version) }
-    bf.create_lockfile(gem_specs: specs)
+    specs = (@locks || @gems).map { |name, version| bf.create_dependency(name.to_s, version) }
+    bf.create_lockfile(gem_dependencies: specs)
   end
 
   def write_lines(lines, filename)

@@ -90,22 +90,33 @@ module ConservativeResolver
     @unlock
   end
 
+  def conservative_search_for
+    @conservative_search_for ||= {}
+  end
+
   def search_for(dependency)
-    # TODO: prolly want memoization here - this method gets hit a lot, on even a small dependency tree.
     res = super(dependency)
 
-    # filter out old versions so we don't regress
-    res.select! do |sg|
-      # presumes each SpecGroup only has one version in it. Appears real #search_for method
-      # groups by version (presuming varying platform values)
+    dep = dependency.dep unless dependency.is_a? Gem::Dependency
+    conservative_search_for[dep] || begin
+      res.select! do |sg|
+        # filter out old versions so we don't regress
+        # if the gem is unlocked, then filter out current and older versions.
+        # if the gem is locked, then filter out only older versions.
 
-      # if the gem is unlocked, then filter out current and older versions.
-      # if the gem is locked, then filter out only older versions.
-      gem_spec = sg.first
-      op = ConservativeResolver.unlock.include?(gem_spec.name) ? :> : :>=
-      gem_spec.version.send(op, ConservativeResolver.locked_specs[gem_spec.name].first.version) # TODO: first?! HAX alert.
+        # SpecGroup is grouped by name/version, multiple entries for multiple platforms.
+        # We only need the name, which will be the same, so hard coding to first is ok.
+        gem_spec = sg.first
+        op = ConservativeResolver.unlock.include?(gem_spec.name) ? :> : :>=
+
+        # an Array per version returned, different entries for different platforms.
+        # We just need the version here so it's ok to hard code this to the first instance.
+        locked_spec = ConservativeResolver.locked_specs[gem_spec.name].first
+        gem_spec.version.send(op, locked_spec.version)
+      end
+
+      # hand the resolution engine versions in older to newer order, rather than the default recent to older order.
+      res.reverse
     end
-
-    res.reverse
   end
 end

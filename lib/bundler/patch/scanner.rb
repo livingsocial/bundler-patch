@@ -39,7 +39,7 @@ module Bundler::Patch
       end
     end
 
-    def conservative_update(gems_to_update, def_builder=lambda { Bundler::Definition.build(Bundler.default_gemfile, Bundler.default_gemfile, {gems: gems_to_update}) })
+    def conservative_update(gems_to_update, def_builder=lambda { Bundler.definition({gems: gems_to_update}) })
       gems_to_update = Array(gems_to_update)
       puts "Updating '#{gems_to_update.join(' ')}' to address vulnerabilities"
       bundler_def = def_builder.call

@@ -8,6 +8,50 @@ describe Scanner do
   it 'could re-detect unfixed stuff after bundle audit and notify'
 
   it 'could attempt to discover requirements that will not allow an upgrade'
-    # e.g. if foo requires a specific version of bar that won't allow bar to be patched, then either notify or try
-    # to bundle update foo as well. maybe support that as an aggressive option or somesuch.
+  # e.g. if foo requires a specific version of bar that won't allow bar to be patched, then either notify or try
+  # to bundle update foo as well. maybe support that as an aggressive option or somesuch.
+
+
+  context 'conservative bundler hax' do
+    before do
+      @bf = BundlerFixture.new
+    end
+
+    after do
+      @bf.clean_up
+    end
+
+    it 'should do minimal updates' do
+      Dir.chdir(@bf.dir) do
+        @bf.create_lockfile(
+          gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
+          source_specs: [
+            @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
+            @bf.create_spec('bar', '1.1.2'),
+            @bf.create_spec('bar', '1.1.3'),
+            @bf.create_spec('quux', '0.0.4'),
+          ], ensure_sources: false)
+
+        @bf.parsed_lockfile_spec('bar').version.to_s.should == '1.1.3'
+
+        scan = Bundler::Patch::Scanner.new
+        scan.conservative_update('foo', lambda {@bf.create_definition(
+          gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
+          source_specs: [
+            @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
+            @bf.create_spec('foo', '2.5.0', [['bar', '>= 1.0.4']]),
+            @bf.create_spec('bar', '1.1.2'),
+            @bf.create_spec('bar', '1.1.3'),
+            @bf.create_spec('bar', '3.2.0'),
+            @bf.create_spec('quux', '0.2.0'),
+          ], ensure_sources: false, update_gems: 'foo'
+        )})
+
+        @bf.parsed_lockfile_spec('bar').version.to_s.should == '1.1.3'
+        @bf.parsed_lockfile_spec('foo').version.to_s.should == '2.5.0'
+        @bf.parsed_lockfile_spec('quux').version.to_s.should == '0.0.4'
+      end
+    end
+  end
 end
+

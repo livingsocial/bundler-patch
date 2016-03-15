@@ -35,10 +35,18 @@ module Bundler::Patch
         puts @no_vulns_message
       else
         gems_to_update = gems.uniq
-        puts "Updating '#{gems_to_update.join(" ")}' to address vulnerabilities"
-        Bundler.ui = Bundler::UI::Shell.new
-        Bundler::CLI::Update.new({}, gems_to_update).run
+        conservative_update(gems_to_update)
       end
+    end
+
+    def conservative_update(gems_to_update, def_builder=lambda { Bundler::Definition.build(Bundler.default_gemfile, Bundler.default_gemfile, {gems: gems_to_update}) })
+      gems_to_update = Array(gems_to_update)
+      puts "Updating '#{gems_to_update.join(' ')}' to address vulnerabilities"
+      bundler_def = def_builder.call
+      Bundler::Resolver.prepend(ConservativeResolver)
+      ConservativeResolver.locked_specs = bundler_def.instance_variable_get('@locked_specs')
+      ConservativeResolver.unlock = gems_to_update
+      bundler_def.lock(File.join(Dir.pwd, 'Gemfile.lock')) # TODO: handle lockfile properly
     end
 
     private
@@ -62,5 +70,42 @@ module Bundler::Patch
         Gemfile.new(gems: [gem], patched_versions: patched)
       end
     end
+  end
+end
+
+module ConservativeResolver
+  def self.locked_specs=(value)
+    @locked_specs = value
+  end
+
+  def self.locked_specs
+    @locked_specs
+  end
+
+  def self.unlock=(value)
+    @unlock = value
+  end
+
+  def self.unlock
+    @unlock
+  end
+
+  def search_for(dependency)
+    # TODO: prolly want memoization here - this method gets hit a lot, on even a small dependency tree.
+    res = super(dependency)
+
+    # filter out old versions so we don't regress
+    res.select! do |sg|
+      # presumes each SpecGroup only has one version in it. Appears real #search_for method
+      # groups by version (presuming varying platform values)
+
+      # if the gem is unlocked, then filter out current and older versions.
+      # if the gem is locked, then filter out only older versions.
+      gem_spec = sg.first
+      op = ConservativeResolver.unlock.include?(gem_spec.name) ? :> : :>=
+      gem_spec.version.send(op, ConservativeResolver.locked_specs[gem_spec.name].first.version) # TODO: first?! HAX alert.
+    end
+
+    res.reverse
   end
 end

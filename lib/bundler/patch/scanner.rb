@@ -46,7 +46,7 @@ module Bundler::Patch
       Bundler::Resolver.prepend(ConservativeResolver)
       ConservativeResolver.locked_specs = bundler_def.instance_variable_get('@locked_specs')
       ConservativeResolver.unlock = gems_to_update
-      bundler_def.lock(File.join(Dir.pwd, 'Gemfile.lock')) # TODO: handle lockfile properly
+      bundler_def.lock(File.join(Dir.pwd, 'Gemfile.lock'))
     end
 
     private

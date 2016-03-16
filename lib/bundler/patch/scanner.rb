@@ -82,7 +82,7 @@ module Bundler::Patch
   end
 end
 
-module ConservativeResolver
+class ConservativeResolver < Bundler::Resolver
   attr_accessor :locked_specs, :unlock, :unlocking_all
 
   def search_for(dependency)
@@ -130,8 +130,7 @@ module Bundler::Patch
         else
           # Run a resolve against the locally available gems
           base = last_resolve.is_a?(Bundler::SpecSet) ? Bundler::SpecSet.new(last_resolve) : []
-          resolver = Bundler::Resolver.new(index, source_requirements, base)
-          resolver.extend ConservativeResolver
+          resolver = ConservativeResolver.new(index, source_requirements, base)
           locked_specs = if @unlocking && @locked_specs.length == 0
                            # Have to grab these again. Default behavior is to not store any
                            # locked_specs if updating all gems, because behavior is the same

@@ -36,6 +36,10 @@ describe Scanner do
       end
     end
 
+    def lockfile_spec_version(gem_name)
+      @bf.parsed_lockfile_spec(gem_name).version.to_s
+    end
+
     it 'when updated gem has same dep req' do
       setup_lockfile do
         builder_def = @bf.create_definition(
@@ -50,9 +54,9 @@ describe Scanner do
           ], ensure_sources: false, update_gems: 'foo')
         @scan.conservative_update('foo', builder_def)
 
-        @bf.parsed_lockfile_spec('bar').version.to_s.should == '1.1.3'
-        @bf.parsed_lockfile_spec('foo').version.to_s.should == '2.5.0'
-        @bf.parsed_lockfile_spec('quux').version.to_s.should == '0.0.4'
+        lockfile_spec_version('bar').should == '1.1.3'
+        lockfile_spec_version('foo').should == '2.5.0'
+        lockfile_spec_version('quux').should == '0.0.4'
       end
     end
 
@@ -74,9 +78,9 @@ describe Scanner do
 
         # here's a case where it might be nice to just go to 2.0.1. Presuming SemVer (which is dangerous)
         # 2.0.1 has a bugfix that 2.0.0 doesn't, so ... why not just go to 2.0.1?
-        @bf.parsed_lockfile_spec('bar').version.to_s.should == '2.0.0'
-        @bf.parsed_lockfile_spec('foo').version.to_s.should == '2.5.0'
-        @bf.parsed_lockfile_spec('quux').version.to_s.should == '0.0.4'
+        lockfile_spec_version('bar').should == '2.0.0'
+        lockfile_spec_version('foo').should == '2.5.0'
+        lockfile_spec_version('quux').should == '0.0.4'
       end
     end
 
@@ -95,9 +99,9 @@ describe Scanner do
           ], ensure_sources: false, update_gems: gems_to_update)
         @scan.conservative_update(gems_to_update, builder_def)
 
-        @bf.parsed_lockfile_spec('bar').version.to_s.should == '1.1.3'
-        @bf.parsed_lockfile_spec('foo').version.to_s.should == '2.5.0'
-        @bf.parsed_lockfile_spec('quux').version.to_s.should == '0.2.0'
+        lockfile_spec_version('bar').should == '1.1.3'
+        lockfile_spec_version('foo').should == '2.5.0'
+        lockfile_spec_version('quux').should == '0.2.0'
       end
     end
 
@@ -116,9 +120,9 @@ describe Scanner do
           ], ensure_sources: false, update_gems: true)
         @scan.conservative_update(true, builder_def)
 
-        @bf.parsed_lockfile_spec('bar').version.to_s.should == '1.1.4'
-        @bf.parsed_lockfile_spec('foo').version.to_s.should == '2.5.0'
-        @bf.parsed_lockfile_spec('quux').version.to_s.should == '0.2.0'
+        lockfile_spec_version('bar').should == '1.1.4'
+        lockfile_spec_version('foo').should == '2.5.0'
+        lockfile_spec_version('quux').should == '0.2.0'
       end
     end
   end

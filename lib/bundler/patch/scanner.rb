@@ -46,16 +46,12 @@ module Bundler::Patch
       conservative_update(true)
     end
 
-    def conservative_update(gems_to_update, def_builder=nil)
+    def conservative_update(gems_to_update, builder_def=nil)
       gems_to_update = Array(gems_to_update)
-      bundler_def = if def_builder
-                      def_builder.call
-                    else
-                      begin
-                        unlock = gems_to_update === true ? true : {gems: gems_to_update}
-                        Bundler.definition(unlock)
-                      end
-                    end
+      bundler_def = builder_def || begin
+        unlock = gems_to_update === true ? true : {gems: gems_to_update}
+        Bundler.definition(unlock)
+      end
       bundler_def.extend ConservativeDefinition
       bundler_def.gems_to_update = gems_to_update
       bundler_def.lock(File.join(Dir.pwd, 'Gemfile.lock'))

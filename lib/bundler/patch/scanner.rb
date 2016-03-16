@@ -10,7 +10,7 @@ module Bundler::Patch
     option :advisory_db_path, type: :string, desc: 'Optional custom advisory db path.'
     desc 'Scans current directory for known vulnerabilities and outputs them.'
 
-    def scan(options={})
+    def scan(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
       _scan(options)
 
       if @specs.empty? then
@@ -26,7 +26,7 @@ module Bundler::Patch
     option :advisory_db_path, type: :string, desc: 'Optional custom advisory db path.'
     desc 'Scans current directory for known vulnerabilities and attempts to patch your files to fix them.'
 
-    def patch(options={})
+    def patch(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
       _scan(options)
 
       @specs.map(&:update)
@@ -35,14 +35,27 @@ module Bundler::Patch
         puts @no_vulns_message
       else
         gems_to_update = gems.uniq
+        puts "Updating '#{gems_to_update.join(' ')}' to address vulnerabilities"
         conservative_update(gems_to_update)
       end
     end
 
-    def conservative_update(gems_to_update, def_builder=lambda { Bundler.definition({gems: gems_to_update}) })
+    desc 'Conservatively updates all gems in the Gemfile based on current requirements.'
+
+    def update(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
+      conservative_update(true)
+    end
+
+    def conservative_update(gems_to_update, def_builder=nil)
       gems_to_update = Array(gems_to_update)
-      puts "Updating '#{gems_to_update.join(' ')}' to address vulnerabilities"
-      bundler_def = def_builder.call
+      bundler_def = if def_builder
+                      def_builder.call
+                    else
+                      begin
+                        unlock = gems_to_update === true ? true : {gems: gems_to_update}
+                        Bundler.definition(unlock)
+                      end
+                    end
       bundler_def.extend ConservativeDefinition
       bundler_def.gems_to_update = gems_to_update
       bundler_def.lock(File.join(Dir.pwd, 'Gemfile.lock'))
@@ -56,6 +69,7 @@ module Bundler::Patch
         @results = Bundler::Advise::GemAdviser.new(advisories: ads).scan_lockfile
       end
 
+      # TODO: this bit of duplication is a little stupid
       if options[:advisory_db_path]
         ads = Bundler::Advise::Advisories.new(dir: options[:advisory_db_path])
         @results += Bundler::Advise::GemAdviser.new(advisories: ads).scan_lockfile
@@ -73,23 +87,14 @@ module Bundler::Patch
 end
 
 module ConservativeResolver
-  def locked_specs=(value)
-    @locked_specs = value
-  end
-
-  def unlock=(value)
-    @unlock = value
-  end
-
-  def conservative_search_for
-    @conservative_search_for ||= {}
-  end
+  attr_accessor :locked_specs, :unlock, :unlocking_all
 
   def search_for(dependency)
     res = super(dependency)
 
     dep = dependency.dep unless dependency.is_a? Gem::Dependency
-    conservative_search_for[dep] ||= begin
+    @conservative_search_for ||= {}
+    @conservative_search_for[dep] ||= begin
       res.select! do |sg|
         # filter out old versions so we don't regress
         # if the gem is unlocked, then filter out current and older versions.
@@ -98,7 +103,7 @@ module ConservativeResolver
         # SpecGroup is grouped by name/version, multiple entries for multiple platforms.
         # We only need the name, which will be the same, so hard coding to first is ok.
         gem_spec = sg.first
-        op = @unlock.include?(gem_spec.name) ? :> : :>=
+        op = (@unlocking_all || @unlock.include?(gem_spec.name)) ? :> : :>=
 
         # an Array per version returned, different entries for different platforms.
         # We just need the version here so it's ok to hard code this to the first instance.
@@ -114,15 +119,13 @@ end
 
 module Bundler::Patch
   module ConservativeDefinition
-    def gems_to_update=(value)
-      # @unlock has this value in the initializer, but gets eager_loaded
-      # by the end of it, and won't serve the purpose this module needs.
-      @gems_to_update = value
-    end
+    # @unlock holds these in the initializer, but gets eager_loaded
+    # by the end of it, and won't serve the purpose this module needs.
+    attr_accessor :gems_to_update
 
     # This copies way too much code, but for now is an acceptable step forward. Intervening into the creation
     # of a Definition instance is a bit of a pain, a lot of preliminary data has to be gathered first, and
-    # copying this one method, avoids copying much of that code.
+    # copying this one method, avoids copying much of that code. Pick your poison.
     def resolve
       @resolve ||= begin
         last_resolve = converge_locked_specs
@@ -133,7 +136,19 @@ module Bundler::Patch
           base = last_resolve.is_a?(Bundler::SpecSet) ? Bundler::SpecSet.new(last_resolve) : []
           resolver = Bundler::Resolver.new(index, source_requirements, base)
           resolver.extend ConservativeResolver
-          resolver.locked_specs = @locked_specs
+          locked_specs = if @unlocking && @locked_specs.length == 0
+                           # Have to grab these again. Default behavior is to not store any
+                           # locked_specs if updating all gems, because behavior is the same
+                           # with no lockfile OR lockfile but update them all. In our case,
+                           # we need to know the locked versions for conservative comparison.
+                           locked = Bundler::LockfileParser.new(@lockfile_contents)
+                           resolver.unlocking_all = true
+                           Bundler::SpecSet.new(locked.specs)
+                         else
+                           resolver.unlocking_all = false
+                           @locked_specs
+                         end
+          resolver.locked_specs = locked_specs
           resolver.unlock = @gems_to_update
           result = resolver.start(expanded_dependencies)
           spec_set = Bundler::SpecSet.new(result)

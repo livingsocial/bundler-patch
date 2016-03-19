@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['chrismo@clabs.org']
 
   spec.summary       = %q{Patch Gemfile in various awesome ways}
-  # spec.description   = ""
+  # spec.description   = ''
   spec.homepage      = 'https://github.com/livingsocial/bundler-patch'
   spec.license       = 'MIT'
 

@@ -37,8 +37,6 @@ describe Scanner do
 
     it 'when updated gem has same dep req' do
       setup_lockfile do
-        @bf.parsed_lockfile_spec('bar').version.to_s.should == '1.1.3'
-
         scan = Bundler::Patch::Scanner.new
         def_builder = lambda { @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
@@ -61,8 +59,6 @@ describe Scanner do
 
     it 'when updated gem has updated dep req' do
       setup_lockfile do
-        @bf.parsed_lockfile_spec('bar').version.to_s.should == '1.1.3'
-
         scan = Bundler::Patch::Scanner.new
         def_builder = lambda { @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
@@ -79,13 +75,36 @@ describe Scanner do
         ) }
         scan.conservative_update('foo', def_builder)
 
-        # heh - here's a case where, well, really it should just go to 2.0.1, that has a bugfix that 2.0.0 doesn't,
-        # so ... why didn't you just go that little bit extra and grab 2.0.1?
-        #
-        # this is also presuming SemVer, which there are cases in the wild (Rails!) that's not really SemVer.
+        # here's a case where it might be nice to just go to 2.0.1. Presuming SemVer (which is dangerous)
+        # 2.0.1 has a bugfix that 2.0.0 doesn't, so ... why not just go to 2.0.1?
         @bf.parsed_lockfile_spec('bar').version.to_s.should == '2.0.0'
         @bf.parsed_lockfile_spec('foo').version.to_s.should == '2.5.0'
         @bf.parsed_lockfile_spec('quux').version.to_s.should == '0.0.4'
+      end
+    end
+
+    it 'updating multiple gems with same req' do
+      setup_lockfile do
+        scan = Bundler::Patch::Scanner.new
+        gems_to_update = ['foo', 'quux']
+        def_builder = lambda { @bf.create_definition(
+          gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
+          source_specs: [
+            @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
+            @bf.create_spec('foo', '2.5.0', [['bar', '>= 1.0.4']]),
+            @bf.create_spec('bar', '1.1.2'),
+            @bf.create_spec('bar', '1.1.3'),
+            @bf.create_spec('bar', '3.2.0'),
+            @bf.create_spec('quux', '0.2.0'),
+          ], ensure_sources: false, update_gems: gems_to_update
+        ) }
+        scan.conservative_update(gems_to_update, def_builder)
+
+        # here's a case where it might be nice to just go to 2.0.1. Presuming SemVer (which is dangerous)
+        # 2.0.1 has a bugfix that 2.0.0 doesn't, so ... why not just go to 2.0.1?
+        @bf.parsed_lockfile_spec('bar').version.to_s.should == '1.1.3'
+        @bf.parsed_lockfile_spec('foo').version.to_s.should == '2.5.0'
+        @bf.parsed_lockfile_spec('quux').version.to_s.should == '0.2.0'
       end
     end
   end

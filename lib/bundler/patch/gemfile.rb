@@ -1,19 +1,19 @@
 module Bundler::Patch
   class Gemfile < UpdateSpec
-    attr_reader :gems # TODO: this will like never be used as an array, right?
+    attr_reader :gem
 
     def initialize(target_dir: Dir.pwd,
-                   gems: [],
+                   gem:,
                    patched_versions: [])
       super(target_file: 'Gemfile',
             target_dir: target_dir,
             patched_versions: patched_versions)
       # TODO: support Gem::Requirement in patched_versions
-      @gems = gems
+      @gem = gem
     end
 
     def to_s
-      "#{@gems.join} #{patched_versions}"
+      "#{@gem} #{patched_versions}"
     end
 
     def update
@@ -34,11 +34,9 @@ module Bundler::Patch
       # We'll still instance_eval the gem line though, to properly
       # handle the various options and possible multiple reqs.
       @target_file = 'Gemfile'
-      @gems.each do |gem|
-        @regexes = /^\s*gem.*['"]\s*#{gem}\s*['"].*$/
-        file_replace do |match, re|
-          update_to_new_gem_version(match)
-        end
+      @regexes = /^\s*gem.*['"]\s*#{@gem}\s*['"].*$/
+      file_replace do |match, re|
+        update_to_new_gem_version(match)
       end
     end
 

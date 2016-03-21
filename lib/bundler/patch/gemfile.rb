@@ -61,6 +61,8 @@ module Bundler::Patch
       return match if req.compound? && req.satisfied_by?(Gem::Version.new(new_version))
 
       if new_version && prefix =~ /~/
+        # could Gem::Version#approximate_recommendation work here?
+
         # match segments. if started with ~> 1.2 and new_version is 3 segments, replace with 2 segments.
         count = current_version.split(/\./).length
         new_version = new_version.split(/\./)[0..(count-1)].join('.')

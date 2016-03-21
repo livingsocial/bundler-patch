@@ -42,20 +42,29 @@ module Bundler::Patch
 
     desc 'Conservatively updates all gems in the Gemfile based on current requirements.'
 
+    option :strict, type: :boolean, desc: 'Remove undesired gem versions from index search results, causing dependency resolution to fail if conservative update cannot be accomplished.'
+    option :minor_allowed, type: :boolean, desc: 'By default, only the most recent release version of the current major.minor will be updated to. Set this option to allow upgrading to the most recent minor.release of the current major version.'
+
     def update(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
-      conservative_update(true)
+      conservative_update(true, options)
     end
 
-    def conservative_update(gems_to_update, builder_def=nil)
+    def conservative_update(gems_to_update, options={}, builder_def=nil)
       gems_to_update = Array(gems_to_update)
+
+      Bundler.ui = Bundler::UI::Shell.new
+
+      resolve_remote = false
       bundler_def = builder_def || begin
         unlock = (gems_to_update === [true]) ? true : {gems: gems_to_update}
         Bundler.definition(unlock)
+        resolve_remote = true
       end
       bundler_def.extend ConservativeDefinition
       bundler_def.gems_to_update = gems_to_update
-      # options["local"] ? definition.resolve_with_cache! : definition.resolve_remotely!
-      bundler_def.resolve_remotely!
+      bundler_def.strict = options[:strict]
+      bundler_def.minor_allowed = options[:minor_allowed]
+      bundler_def.resolve_remotely! if resolve_remote
       bundler_def.lock(File.join(Dir.pwd, 'Gemfile.lock'))
     end
 
@@ -85,41 +94,102 @@ module Bundler::Patch
 end
 
 class ConservativeResolver < Bundler::Resolver
-  attr_accessor :locked_specs, :unlock, :unlocking_all
+  attr_accessor :locked_specs, :unlock, :unlocking_all, :strict, :minor_allowed
 
   def search_for(dependency)
     res = super(dependency)
 
     dep = dependency.dep unless dependency.is_a? Gem::Dependency
     @conservative_search_for ||= {}
-    @conservative_search_for[dep] ||= begin
-      res.select! do |sg|
-        # filter out old versions so we don't regress
-        # if the gem is unlocked, then filter out current and older versions.
-        # if the gem is locked, then filter out only older versions.
+    #@conservative_search_for[dep] ||= # TODO turning off caching allowed a real-world sample to work, dunno why yet.
+    begin
+      gem_name = dep.name
 
+      # if we're unlocking, we need to look for a newer one first, but fallback
+      # to current version.
+      unlocking_gem = (@unlocking_all || @unlock.include?(gem_name))
+
+      # an Array per version returned, different entries for different platforms.
+      # We just need the version here so it's ok to hard code this to the first instance.
+      locked_spec = @locked_specs[gem_name].first
+
+      (@strict ?
+        filter_specs(res, unlocking_gem, locked_spec) :
+        sort_specs(res, unlocking_gem, locked_spec)).tap do |res|
+        if ENV['DEBUG_RESOLVER']
+          # TODO: if we keep this, gotta go through Bundler.ui
+          if res
+            p [gem_name, res.map { |sg| [sg.version, sg.dependencies_for_activated_platforms.map { |dp| [dp.name, dp.requirement.to_s] }] }]
+          else
+            p "No res for #{gem_name}. Orig res: #{super(dependency)}"
+          end
+        end
+      end
+    end
+  end
+
+  def filter_specs(specs, unlocking_gem, locked_spec)
+    ops = unlocking_gem ? [:>, :>=] : [:>=]
+
+    res = ops.map do |op|
+      specs.select do |sg|
         # SpecGroup is grouped by name/version, multiple entries for multiple platforms.
         # We only need the name, which will be the same, so hard coding to first is ok.
         gem_spec = sg.first
-        op = (@unlocking_all || @unlock.include?(gem_spec.name)) ? :> : :>=
 
-        # an Array per version returned, different entries for different platforms.
-        # We just need the version here so it's ok to hard code this to the first instance.
-        locked_spec = @locked_specs[gem_spec.name].first
-        gem_spec.version.send(op, locked_spec.version)
+        if locked_spec
+          gsv = gem_spec.version
+          lsv = locked_spec.version
+
+          must_match = @minor_allowed ? [0] : [0, 1]
+
+          matches = must_match.map { |idx| gsv.segments[idx] == lsv.segments[idx] }
+          (matches.uniq == [true]) ? gsv.send(op, lsv) : false
+        else
+          true
+        end
       end
+    end.detect { |a| !a.empty? }
 
-      # hand the resolution engine versions in older to newer order, rather than the default recent to older order.
-      res.reverse
+    # hand the resolution engine versions in older to newer order, rather than the default recent to older order.
+    res ? res.reverse : []
+  end
+
+  def sort_specs(specs, unlocking_gem, locked_spec)
+    locked_version = locked_spec.version
+    locked_spec_group = specs.detect { |s| s.first.version == locked_version }
+
+    filtered = specs.select { |s| s.first.version >= locked_version }
+
+    filtered.sort do |a, b|
+      a_ver = a.first.version
+      b_ver = b.first.version
+      case
+      when a_ver.segments[0] != b_ver.segments[0]
+        b_ver <=> a_ver
+      when !@minor_allowed && (a_ver.segments[1] != b_ver.segments[1])
+        b_ver <=> a_ver
+      else
+        a_ver <=> b_ver
+      end
+    end.tap do |result|
+      unless unlocking_gem
+        # make sure the current locked version is last in list.
+        result.reject! { |s| s.first.version === locked_version }
+        result << locked_spec_group
+      end
     end
   end
 end
 
 module Bundler::Patch
   module ConservativeDefinition
-    # @unlock holds these in the initializer, but gets eager_loaded
+    # @unlock holds these in the initializer, but it gets eager_loaded
     # by the end of it, and won't serve the purpose this module needs.
     attr_accessor :gems_to_update
+
+    # pass-through options to ConservativeResolver
+    attr_accessor :strict, :minor_allowed
 
     # This copies way too much code, but for now is an acceptable step forward. Intervening into the creation
     # of a Definition instance is a bit of a pain, a lot of preliminary data has to be gathered first, and
@@ -147,6 +217,8 @@ module Bundler::Patch
                          end
           resolver.locked_specs = locked_specs
           resolver.unlock = @gems_to_update
+          resolver.strict = @strict
+          resolver.minor_allowed = @minor_allowed
           result = resolver.start(expanded_dependencies)
           spec_set = Bundler::SpecSet.new(result)
 

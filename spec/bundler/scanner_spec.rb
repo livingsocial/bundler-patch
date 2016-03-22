@@ -68,7 +68,7 @@ describe Scanner do
         }.should raise_error(Bundler::VersionConflict)
 
         # strict is true so any bar versions 2.x or greater aren't returned
-        # from search results. TODO: error reporting in this case is bleh.
+        # from search results. TODO: error reporting in this case is blergh.
       end
     end
 
@@ -153,13 +153,40 @@ describe Scanner do
       end
     end
 
-    it 'does not a-splode when no locked_spec result' do
-      # not exactly sure how to recreate this
+    context 'no locked_spec exists' do
+      def with_bundler_setup
+        # bundler has special checks to not include itself in a lot of things
+        Dir.chdir(@bf.dir) do
+          @bf.create_lockfile(
+            gem_dependencies: [@bf.create_dependency('foo')],
+            source_specs: [
+              @bf.create_spec('foo', '1.0.0', [['bundler', '>= 0']]),
+              @bf.create_spec('bundler', '1.10.6'),
+            ], ensure_sources: false)
 
-      false.should == true # do this test
+          @builder_def = @bf.create_definition(
+            gem_dependencies: [@bf.create_dependency('foo')],
+            source_specs: [
+              @bf.create_spec('foo', '1.0.0', [['bundler', '>= 0']]),
+              @bf.create_spec('foo', '1.0.1', [['bundler', '>= 0']]),
+              @bf.create_spec('bundler', '1.10.6'),
+            ], ensure_sources: false, update_gems: true)
+          yield
+        end
+      end
+
+      it 'does not explode when strict' do
+        with_bundler_setup do
+          @scan.conservative_update(true, {strict: true}, @builder_def)
+        end
+      end
+
+      it 'does not explode when not strict' do
+        with_bundler_setup do
+          @scan.conservative_update(true, {strict: false}, @builder_def)
+        end
+      end
     end
-
-    it 'the caching caused the not-a-conflict job_board json conflict'
 
     it 'should never increment major version' do
       setup_lockfile do
@@ -179,6 +206,17 @@ describe Scanner do
         lockfile_spec_version('quux').should == '0.0.4'
       end
     end
+
+    it 'will allow major version if requirement demands it and not strict version'
+
+    it 'the caching caused the not-a-conflict job_board json conflict'
+
+    it 'strict mode insists on trying to push up a gem versus allowing it to stay put'
+
+    it 'should take a list of specific gems to target (UI should)'
+
+    it 'needs to follow through and actually install the gems'
+
   end
 
   context 'spec processing' do

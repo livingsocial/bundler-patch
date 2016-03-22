@@ -57,8 +57,8 @@ module Bundler::Patch
       resolve_remote = false
       bundler_def = builder_def || begin
         unlock = (gems_to_update === [true]) ? true : {gems: gems_to_update}
-        Bundler.definition(unlock)
         resolve_remote = true
+        Bundler.definition(unlock)
       end
       bundler_def.extend ConservativeDefinition
       bundler_def.gems_to_update = gems_to_update
@@ -156,6 +156,7 @@ class ConservativeResolver < Bundler::Resolver
   end
 
   def sort_specs(specs, unlocking_gem, locked_spec)
+    return specs unless locked_spec
     locked_version = locked_spec.version
     locked_spec_group = specs.detect { |s| s.first.version == locked_version }
 

@@ -3,11 +3,15 @@ require_relative '../spec_helper'
 describe Scanner do
   before do
     @bf = BundlerFixture.new
-    @scan = Bundler::Patch::Scanner.new
   end
 
   after do
     @bf.clean_up
+  end
+
+  def test_conservative_update(gems_to_update, options, bundler_def)
+    prep = DefinitionPrep.new(bundler_def, gems_to_update, options).tap { |p| p.prep }
+    prep.bundler_def.lock(File.join(Dir.pwd, 'Gemfile.lock'))
   end
 
   context 'conservative update' do
@@ -31,7 +35,7 @@ describe Scanner do
 
     it 'when updated gem has same dep req' do
       setup_lockfile do
-        builder_def = @bf.create_definition(
+        bundler_def = @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
           source_specs: [
             @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
@@ -41,7 +45,7 @@ describe Scanner do
             @bf.create_spec('bar', '3.2.0'),
             @bf.create_spec('quux', '0.2.0'),
           ], ensure_sources: false, update_gems: 'foo')
-        @scan.conservative_update('foo', {strict: true, minor_allowed: true}, builder_def)
+        test_conservative_update('foo', {strict: true, minor_allowed: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.3'
         lockfile_spec_version('foo').should == '2.5.0'
@@ -51,7 +55,7 @@ describe Scanner do
 
     it 'when updated gem has updated dep req increase major, strict' do
       setup_lockfile do
-        builder_def = @bf.create_definition(
+        bundler_def = @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
           source_specs: [
             @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
@@ -64,7 +68,7 @@ describe Scanner do
             @bf.create_spec('quux', '0.2.0'),
           ], ensure_sources: false, update_gems: 'foo')
         lambda {
-          @scan.conservative_update('foo', {strict: true, minor_allowed: true}, builder_def)
+          test_conservative_update('foo', {strict: true, minor_allowed: true}, bundler_def)
         }.should raise_error(Bundler::VersionConflict)
 
         # strict is true so any bar versions 2.x or greater aren't returned
@@ -74,7 +78,7 @@ describe Scanner do
 
     it 'when updated gem has updated dep req increase major, not strict' do
       setup_lockfile do
-        builder_def = @bf.create_definition(
+        bundler_def = @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
           source_specs: [
             @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
@@ -86,7 +90,7 @@ describe Scanner do
             @bf.create_spec('bar', '3.2.0'),
             @bf.create_spec('quux', '0.2.0'),
           ], ensure_sources: false, update_gems: 'foo')
-        @scan.conservative_update('foo', {strict: false, minor_allowed: true}, builder_def)
+        test_conservative_update('foo', {strict: false, minor_allowed: true}, bundler_def)
 
         lockfile_spec_version('foo').should == '2.5.0'
         lockfile_spec_version('bar').should == '2.0.1'
@@ -97,7 +101,7 @@ describe Scanner do
     it 'updating multiple gems with same req' do
       setup_lockfile do
         gems_to_update = ['foo', 'quux']
-        builder_def = @bf.create_definition(
+        bundler_def = @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
           source_specs: [
             @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
@@ -107,7 +111,7 @@ describe Scanner do
             @bf.create_spec('bar', '3.2.0'),
             @bf.create_spec('quux', '0.2.0'),
           ], ensure_sources: false, update_gems: gems_to_update)
-        @scan.conservative_update(gems_to_update, {strict: true, minor_allowed: true}, builder_def)
+        test_conservative_update(gems_to_update, {strict: true, minor_allowed: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.3'
         lockfile_spec_version('foo').should == '2.5.0'
@@ -117,7 +121,7 @@ describe Scanner do
 
     it 'updates all conservatively' do
       setup_lockfile do
-        builder_def = @bf.create_definition(
+        bundler_def = @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
           source_specs: [
             @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
@@ -128,7 +132,7 @@ describe Scanner do
             @bf.create_spec('bar', '3.2.0'),
             @bf.create_spec('quux', '0.2.0'),
           ], ensure_sources: false, update_gems: true)
-        @scan.conservative_update(true, {strict: true, minor_allowed: true}, builder_def)
+        test_conservative_update(true, {strict: true, minor_allowed: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.4'
         lockfile_spec_version('foo').should == '2.5.0'
@@ -138,14 +142,14 @@ describe Scanner do
 
     it 'updates all conservatively when no upgrade exists' do
       setup_lockfile do
-        builder_def = @bf.create_definition(
+        bundler_def = @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
           source_specs: [
             @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
             @bf.create_spec('bar', '1.1.3'),
             @bf.create_spec('quux', '0.0.4'),
           ], ensure_sources: false, update_gems: true)
-        @scan.conservative_update(true, {strict: true, minor_allowed: true}, builder_def)
+        test_conservative_update(true, {strict: true, minor_allowed: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.3'
         lockfile_spec_version('foo').should == '2.4.0'
@@ -164,7 +168,7 @@ describe Scanner do
               @bf.create_spec('bundler', '1.10.6'),
             ], ensure_sources: false)
 
-          @builder_def = @bf.create_definition(
+          @bundler_def = @bf.create_definition(
             gem_dependencies: [@bf.create_dependency('foo')],
             source_specs: [
               @bf.create_spec('foo', '1.0.0', [['bundler', '>= 0']]),
@@ -177,20 +181,20 @@ describe Scanner do
 
       it 'does not explode when strict' do
         with_bundler_setup do
-          @scan.conservative_update(true, {strict: true}, @builder_def)
+          test_conservative_update(true, {strict: true}, @bundler_def)
         end
       end
 
       it 'does not explode when not strict' do
         with_bundler_setup do
-          @scan.conservative_update(true, {strict: false}, @builder_def)
+          test_conservative_update(true, {strict: false}, @bundler_def)
         end
       end
     end
 
     it 'should never increment major version' do
       setup_lockfile do
-        builder_def = @bf.create_definition(
+        bundler_def = @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
           source_specs: [
             @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
@@ -199,7 +203,7 @@ describe Scanner do
             @bf.create_spec('bar', '2.0.0'),
             @bf.create_spec('quux', '0.0.4'),
           ], ensure_sources: false, update_gems: 'foo')
-        @scan.conservative_update('foo', {strict: true, minor_allowed: true}, builder_def)
+        test_conservative_update('foo', {strict: true, minor_allowed: true}, bundler_def)
 
         lockfile_spec_version('foo').should == '2.4.0'
         lockfile_spec_version('bar').should == '1.1.3'
@@ -208,14 +212,18 @@ describe Scanner do
     end
 
     it 'will allow major version if requirement demands it and not strict version'
+    # this should work already but needs a spec
 
     it 'the caching caused the not-a-conflict job_board json conflict'
 
     it 'strict mode insists on trying to push up a gem versus allowing it to stay put'
+    # and i guess it shouldn't
 
-    it 'should take a list of specific gems to target (UI should)'
+    it 'strict mode should still go to the most recent release version (filter THEN sort?)'
 
-    it 'needs to follow through and actually install the gems'
+    it 'needs to pass-through all install or update bundler options'
+    it 'needs to cope with frozen setting'
+    # see bundler-1.10.6/lib/bundler/installer.rb comments for explanation of frozen
 
   end
 

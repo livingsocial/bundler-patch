@@ -24,6 +24,7 @@ module Bundler::Patch
     end
 
     option :advisory_db_path, type: :string, desc: 'Optional custom advisory db path.'
+    # TODO: support strict and minor_allowed options?
     desc 'Scans current directory for known vulnerabilities and attempts to patch your files to fix them.'
 
     def patch(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
@@ -40,35 +41,28 @@ module Bundler::Patch
       end
     end
 
-    desc 'Conservatively updates all gems in the Gemfile based on current requirements.'
-
     option :strict, type: :boolean, desc: 'Remove undesired gem versions from index search results, causing dependency resolution to fail if conservative update cannot be accomplished.'
     option :minor_allowed, type: :boolean, desc: 'By default, only the most recent release version of the current major.minor will be updated to. Set this option to allow upgrading to the most recent minor.release of the current major version.'
+    # TODO: be nice to support space separated like real `bundle update`
+    option :gems_to_update, type: :array, split: ' ', desc: 'Optional list of gems to update, in quotes, space delimited'
+    desc 'Conservatively updates gems in the Gemfile based on current requirements.'
+    config default_option: 'gems_to_update'
 
     def update(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
-      conservative_update(true, options)
-    end
-
-    def conservative_update(gems_to_update, options={}, builder_def=nil)
-      gems_to_update = Array(gems_to_update)
-
-      Bundler.ui = Bundler::UI::Shell.new
-
-      resolve_remote = false
-      bundler_def = builder_def || begin
-        unlock = (gems_to_update === [true]) ? true : {gems: gems_to_update}
-        resolve_remote = true
-        Bundler.definition(unlock)
-      end
-      bundler_def.extend ConservativeDefinition
-      bundler_def.gems_to_update = gems_to_update
-      bundler_def.strict = options[:strict]
-      bundler_def.minor_allowed = options[:minor_allowed]
-      bundler_def.resolve_remotely! if resolve_remote
-      bundler_def.lock(File.join(Dir.pwd, 'Gemfile.lock'))
+      gems_to_update = options[:gems_to_update] || true
+      conservative_update(gems_to_update, options)
     end
 
     private
+
+    def conservative_update(gems_to_update, options={}, bundler_def=nil)
+      Bundler.ui = Bundler::UI::Shell.new
+
+      prep = DefinitionPrep.new(bundler_def, gems_to_update, options).tap { |p| p.prep }
+
+      options = {'update' => prep.unlock}
+      Bundler::Installer.install(Bundler.root, prep.bundler_def, options)
+    end
 
     def _scan(options)
       Bundler::Advise::Advisories.new.tap do |ads|
@@ -89,6 +83,29 @@ module Bundler::Patch
         gem = advisory.gem
         Gemfile.new(gems: [gem], patched_versions: patched)
       end
+    end
+  end
+end
+
+module Bundler::Patch
+  class DefinitionPrep
+    attr_reader :unlock, :bundler_def
+
+    def initialize(bundler_def, gems_to_update, options)
+      @bundler_def = bundler_def
+      @gems_to_update = gems_to_update
+      @options = options
+    end
+
+    def prep
+      gems_to_update = Array(@gems_to_update)
+
+      @unlock = (gems_to_update === [true]) ? true : {gems: gems_to_update}
+      @bundler_def ||= Bundler.definition(unlock)
+      @bundler_def.extend ConservativeDefinition
+      @bundler_def.gems_to_update = gems_to_update
+      @bundler_def.strict = @options[:strict]
+      @bundler_def.minor_allowed = @options[:minor_allowed]
     end
   end
 end

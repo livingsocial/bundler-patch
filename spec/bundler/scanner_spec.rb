@@ -53,9 +53,9 @@ describe Scanner do
       end
     end
 
-    it 'when updated gem has updated dep req increase major, strict' do
+    it 'when updated gem has updated dep req increase major, strict and non-strict' do
       setup_lockfile do
-        bundler_def = @bf.create_definition(
+        bundler_def = lambda { @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
           source_specs: [
             @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
@@ -66,13 +66,13 @@ describe Scanner do
             @bf.create_spec('bar', '2.0.1'),
             @bf.create_spec('bar', '3.2.0'),
             @bf.create_spec('quux', '0.2.0'),
-          ], ensure_sources: false, update_gems: 'foo')
-        lambda {
-          test_conservative_update('foo', {strict: true, minor_allowed: true}, bundler_def)
-        }.should raise_error(Bundler::VersionConflict)
+          ], ensure_sources: false, update_gems: 'foo') }
 
-        # strict is true so any bar versions 2.x or greater aren't returned
-        # from search results. TODO: error reporting in this case is blergh.
+        test_conservative_update('foo', {strict: true, minor_allowed: true}, bundler_def.call)
+        lockfile_spec_version('foo').should == '2.4.0'
+
+        test_conservative_update('foo', {strict: false, minor_allowed: true}, bundler_def.call)
+        lockfile_spec_version('foo').should == '2.5.0'
       end
     end
 
@@ -211,15 +211,26 @@ describe Scanner do
       end
     end
 
-    it 'will allow major version if requirement demands it and not strict version'
-    # this should work already but needs a spec
+    it 'strict mode should still go to the most recent release version' do
+      setup_lockfile do
+        bundler_def = @bf.create_definition(
+          gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
+          source_specs: [
+            @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
+            @bf.create_spec('foo', '2.4.1', [['bar', '>= 1.0.4']]),
+            @bf.create_spec('foo', '2.4.2', [['bar', '>= 1.0.4']]),
+            @bf.create_spec('bar', '1.1.3'),
+            @bf.create_spec('quux', '0.0.4'),
+          ], ensure_sources: false, update_gems: 'foo')
+        test_conservative_update('foo', {strict: true}, bundler_def)
+
+        lockfile_spec_version('foo').should == '2.4.2'
+        lockfile_spec_version('bar').should == '1.1.3'
+        lockfile_spec_version('quux').should == '0.0.4'
+      end
+    end
 
     it 'the caching caused the not-a-conflict job_board json conflict'
-
-    it 'strict mode insists on trying to push up a gem versus allowing it to stay put'
-    # and i guess it shouldn't
-
-    it 'strict mode should still go to the most recent release version (filter THEN sort?)'
 
     it 'needs to pass-through all install or update bundler options'
     it 'needs to cope with frozen setting'
@@ -270,10 +281,10 @@ describe Scanner do
         versions(res).should == %w(1.7.9 1.7.8)
       end
 
-      it 'when unlocking keep next release only' do
+      it 'when unlocking prefer next release first' do
         res = @cr.filter_specs(create_specs('foo', %w(1.7.8 1.7.9 1.8.0)),
                                unlocking, locked('foo', '1.7.8'))
-        versions(res).should == %w(1.7.9)
+        versions(res).should == %w(1.7.8 1.7.9)
       end
 
       it 'when unlocking keep current when already at latest release' do

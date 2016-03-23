@@ -135,41 +135,43 @@ class ConservativeResolver < Bundler::Resolver
         sort_specs(res, unlocking_gem, locked_spec)).tap do |res|
         if ENV['DEBUG_RESOLVER']
           # TODO: if we keep this, gotta go through Bundler.ui
-          if res
-            p [gem_name, res.map { |sg| [sg.version, sg.dependencies_for_activated_platforms.map { |dp| [dp.name, dp.requirement.to_s] }] }]
-          else
-            p "No res for #{gem_name}. Orig res: #{super(dependency)}"
+          begin
+            p '-' * 80
+            if res
+              p res
+              p [gem_name, res.map { |sg| [sg.version, sg.dependencies_for_activated_platforms.map { |dp| [dp.name, dp.requirement.to_s] }] }]
+            else
+              p "No res for #{gem_name}. Orig res: #{super(dependency)}"
+            end
+          rescue => e
+            p [e.message, e.backtrace[0..5]]
           end
+          p '-' * 80
         end
       end
     end
   end
 
   def filter_specs(specs, unlocking_gem, locked_spec)
-    ops = unlocking_gem ? [:>, :>=] : [:>=]
+    res = specs.select do |sg|
+      # SpecGroup is grouped by name/version, multiple entries for multiple platforms.
+      # We only need the name, which will be the same, so hard coding to first is ok.
+      gem_spec = sg.first
 
-    res = ops.map do |op|
-      specs.select do |sg|
-        # SpecGroup is grouped by name/version, multiple entries for multiple platforms.
-        # We only need the name, which will be the same, so hard coding to first is ok.
-        gem_spec = sg.first
+      if locked_spec
+        gsv = gem_spec.version
+        lsv = locked_spec.version
 
-        if locked_spec
-          gsv = gem_spec.version
-          lsv = locked_spec.version
+        must_match = @minor_allowed ? [0] : [0, 1]
 
-          must_match = @minor_allowed ? [0] : [0, 1]
-
-          matches = must_match.map { |idx| gsv.segments[idx] == lsv.segments[idx] }
-          (matches.uniq == [true]) ? gsv.send(op, lsv) : false
-        else
-          true
-        end
+        matches = must_match.map { |idx| gsv.segments[idx] == lsv.segments[idx] }
+        (matches.uniq == [true]) ? gsv.send(:>=, lsv) : false
+      else
+        true
       end
-    end.detect { |a| !a.empty? }
+    end
 
-    # hand the resolution engine versions in older to newer order, rather than the default recent to older order.
-    res ? res.reverse : []
+    sort_specs(res, unlocking_gem, locked_spec)
   end
 
   def sort_specs(specs, unlocking_gem, locked_spec)
@@ -194,7 +196,7 @@ class ConservativeResolver < Bundler::Resolver
       unless unlocking_gem
         # make sure the current locked version is last in list.
         result.reject! { |s| s.first.version === locked_version }
-        result << locked_spec_group
+        result << locked_spec_group if locked_spec_group
       end
     end
   end

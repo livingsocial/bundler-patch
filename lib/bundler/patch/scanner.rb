@@ -23,10 +23,9 @@ module Bundler::Patch
       end
     end
 
-    option :strict, type: :boolean, desc: 'Remove undesired gem versions from index search results, causing dependency resolution to fail if conservative update cannot be accomplished.'
-    option :minor_allowed, type: :boolean, desc: 'By default, only the most recent release version of the current major.minor will be updated to. Set this option to allow upgrading to the most recent minor.release of the current major version.'
+    option :strict, type: :boolean, desc: 'Do not allow any gem to be upgraded past most recent release (or minor if -m used). Sometimes raises VersionConflict.'
+    option :minor_allowed, type: :boolean, desc: 'Upgrade to the latest minor.release version.'
     option :advisory_db_path, type: :string, desc: 'Optional custom advisory db path.'
-    # TODO: support strict and minor_allowed options?
     desc 'Scans current directory for known vulnerabilities and attempts to patch your files to fix them.'
 
     def patch(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
@@ -43,11 +42,11 @@ module Bundler::Patch
       end
     end
 
-    option :strict, type: :boolean, desc: 'Remove undesired gem versions from index search results, causing dependency resolution to fail if conservative update cannot be accomplished.'
-    option :minor_allowed, type: :boolean, desc: 'By default, only the most recent release version of the current major.minor will be updated to. Set this option to allow upgrading to the most recent minor.release of the current major version.'
+    option :strict, type: :boolean, desc: 'Do not allow any gem to be upgraded past most recent release (or minor if -m used). Sometimes raises VersionConflict.'
+    option :minor_allowed, type: :boolean, desc: 'Upgrade to the latest minor.release version.'
     # TODO: be nice to support array w/o quotes like real `bundle update`
     option :gems_to_update, type: :array, split: ' ', desc: 'Optional list of gems to update, in quotes, space delimited'
-    desc 'Conservatively updates gems in the Gemfile based on current requirements.'
+    desc 'Update spec gems to the latest release version. Required gems could be upgraded to latest minor or major if necessary.'
     config default_option: 'gems_to_update'
 
     def update(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic

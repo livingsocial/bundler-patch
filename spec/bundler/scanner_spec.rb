@@ -345,8 +345,7 @@ describe Scanner do
       Dir.chdir(@bf.dir) do
         # This is a weird combination of:
         # - Fake advisory
-        # - Fake Gemfile and lock file
-        # - But based on a real gem and its versions in for realz rubygems.org
+        # - Real gem and its real versions @ rubygems.org
 
         # Scanner now uses the full Bundler install code - which has a lot
         # of hoops to jump through, and I found it easier to make that part
@@ -357,7 +356,7 @@ describe Scanner do
         FileUtils.makedirs gem_dir
         File.open(File.join(gem_dir, 'rack-patch.yml'), 'w') { |f| f.print ad.to_yaml }
 
-        GemfileLockFixture.create(@bf.dir, {rack: '1.4.4'})
+        GemfileLockFixture.create(@bf.dir, ['rack'], {rack: '1.4.4'})
 
         ENV['DEBUG_RESOLVER'] = '1'
 
@@ -365,11 +364,6 @@ describe Scanner do
 
         p File.read(File.join(@bf.dir, 'Gemfile'))
 
-        # OK - I see it now. The Gemfile behavior, which predates the Scanner now re-using
-        # the conservative_update behavior, doesn't match. Since the Gemfile in this case
-        # has a specific version specified, then, for the sake of a security update, it
-        # actually changes the Gemfile to match the most conservative version possible
-        # - 1.4.5. And Bundler won't override the exact version in the Gemfile.
         lockfile_spec_version('rack').should == '1.4.7'
       end
     end

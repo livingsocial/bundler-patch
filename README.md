@@ -25,7 +25,7 @@ To specify the path to an optional advisory database:
 
     $ bundle-patch scan -a ~/.my-custom-db
 
-*NOTE*: `gems` will be appended to the end of the path.
+_*NOTE*: `gems` will be appended to the end of the provided advisory database path._
 
 To attempt to patch the detected vulnerabilities, use the `patch` command instead of `scan`:
 
@@ -82,16 +82,28 @@ There's no option to allow major version upgrades as this is the default behavio
 
 ### Troubleshooting
 
-All this tool does is output a `bundle update gem1 gem2 ...` command, so most problems with getting the update to work
-are usual Bundler problems. Check for any dependencies that depend on a gem that needs to be updated and has a
-constraining requirement that won't allow the newer gem.
+The most frequent problems with this tool involve expectations around what gems should or shouldn't be upgraded. This
+can quickly get complicated as even a small dependency tree can involve many moving parts, and Bundler works hard to
+find a combination that satisfies all of the dependencies and requirements.
+
+You can get a (very verbose) look into how Bundler's resolution algorithm is working by setting the `DEBUG_RESOLVER`
+environment variable. While it can be tricky to dig through, it should explain how it came to the conclusions it came
+to.
+
+Adding to the usual Bundler complexity, `bundler-patch` is injecting its own logic to the resolution process to achieve
+its goals. If there's a bug involved, it's almost certainly in the `bundler-patch` code as Bundler has been around a
+long time and has thorough testing and real world experience.
+
 
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can
+also run `bin/console` for an interactive prompt that will allow you to experiment.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the
+version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version,
+push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
 ## Contributing
 

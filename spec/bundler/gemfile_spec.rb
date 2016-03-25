@@ -2,50 +2,6 @@ require_relative '../spec_helper'
 
 require 'fileutils'
 
-class GemfileLockFixture
-  def self.create(dir, gems={}, locks=nil)
-    fix = self.new(dir, gems, locks).tap do |fix|
-      fix.create_gemfile
-      fix.create_gemfile_lock
-    end
-    if block_given?
-      Dir.chdir fix.dir do
-        yield fix.dir
-      end
-    end
-  end
-
-  attr_reader :dir, :gems, :locks
-
-  def initialize(dir, gems, locks=nil)
-    @dir = dir
-    @gems = gems
-    @locks = locks
-  end
-
-  def create_gemfile
-    lines = []
-    lines << "source 'https://rubygems.org'"
-    @gems.each do |name, versions|
-      line = "gem '#{name}'"
-      Array(versions).each { |version| line << ", '#{version}'" } if versions
-      lines << line
-    end
-    write_lines(lines, 'Gemfile')
-    File.join(@dir, 'Gemfile')
-  end
-
-  def create_gemfile_lock
-    bf = BundlerFixture.new(dir: @dir)
-    specs = (@locks || @gems).map { |name, version| bf.create_dependency(name.to_s, version) }
-    bf.create_lockfile(gem_dependencies: specs)
-  end
-
-  def write_lines(lines, filename)
-    File.open(File.join(@dir, filename), 'w') { |f| f.puts lines }
-  end
-end
-
 RSpec::Matchers.define :have_line do |expected|
   match do |actual|
     actual.split(/\n/).map(&:strip).include?(expected)
@@ -76,7 +32,7 @@ describe Gemfile do
     describe 'gem name matching' do
       it 'should not get confused by gems with same ending' do
         GemfileLockFixture.create(@tmpdir, {rails: '3.2.2', 'jquery-rails': '3.1.3'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'rails', patched_versions: ['3.2.22.2'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'rails', patched_versions: ['3.2.22.2'])
           s.update
           # TODO: consider 'fixing' to "gem 'foo', '>= 1.2.4'"
           File.read('Gemfile').should have_line("gem 'rails', '3.2.22.2'")
@@ -90,7 +46,7 @@ describe Gemfile do
 
       it 'should support no version' do
         GemfileLockFixture.create(@tmpdir, {foo: nil}, {foo: '1.2.3'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['1.2.4'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.2.4'])
           s.update
           # TODO: consider 'fixing' to "gem 'foo', '>= 1.2.4'"
           File.read('Gemfile').should have_line("gem 'foo'")
@@ -100,7 +56,7 @@ describe Gemfile do
 
       it 'should support exact version' do
         GemfileLockFixture.create(@tmpdir, {foo: '1.2.3'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['1.2.4'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.2.4'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '1.2.4'")
           File.read('Gemfile.lock').should have_line('foo (1.2.3)') # not updating Gemfile.lock anymore
@@ -110,7 +66,7 @@ describe Gemfile do
       it 'should support exact version across major rev' do
         # TODO: major rev usually means breaking changes, so stay put. output warning?
         GemfileLockFixture.create(@tmpdir, {foo: '1.2.3'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['2.0.0'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['2.0.0'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '1.2.3'")
           File.read('Gemfile.lock').should have_line('foo (1.2.3)')
@@ -119,7 +75,7 @@ describe Gemfile do
 
       it 'should support greater than version' do
         GemfileLockFixture.create(@tmpdir, {foo: '> 1.2'}, {foo: '1.2.5'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['1.3.0'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.3.0'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '>= 1.3.0'")
         end
@@ -127,7 +83,7 @@ describe Gemfile do
 
       it 'should support greater than or equal version' do
         GemfileLockFixture.create(@tmpdir, {foo: '>=1.2'}, {foo: '1.2.5'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['1.3.0'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.3.0'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '>= 1.3.0'")
         end
@@ -135,7 +91,7 @@ describe Gemfile do
 
       it 'should support less than version when patched still less than spec' do
         GemfileLockFixture.create(@tmpdir, {foo: '< 3'}, {foo: '2.4'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['2.5.1'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['2.5.1'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '< 3'")
         end
@@ -143,7 +99,7 @@ describe Gemfile do
 
       it 'should support less than version when patched greater than spec and across minor rev' do
         GemfileLockFixture.create(@tmpdir, {foo: '< 2.6'}, {foo: '2.4'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['2.7.1'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['2.7.1'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '~> 2.7'")
         end
@@ -153,7 +109,7 @@ describe Gemfile do
         # TODO: major rev usually means breaking changes, so stay put. output warning?
         pending('this case will need some special handling')
         GemfileLockFixture.create(@tmpdir, {foo: '< 3'}, {foo: '2.4'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['3.1.1'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['3.1.1'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '< 3'")
         end
@@ -162,7 +118,7 @@ describe Gemfile do
       it 'should support less than equal to version' do
         # `<=` operator isn't documented on the web, but it is supported in the code
         GemfileLockFixture.create(@tmpdir, {foo: '<= 2.6'}, {foo: '2.4'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['2.7.1'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['2.7.1'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '~> 2.7'")
         end
@@ -170,7 +126,7 @@ describe Gemfile do
 
       it 'should support twiddle-wakka with two segments' do
         GemfileLockFixture.create(@tmpdir, {foo: '~>1.2'}, {foo: '1.2.5'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['1.3.0'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.3.0'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '~> 1.3'")
         end
@@ -178,7 +134,7 @@ describe Gemfile do
 
       it 'should support twiddle-wakka with three segments' do
         GemfileLockFixture.create(@tmpdir, {foo: '~>1.2.1'}, {foo: '1.2.5'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['1.3.0'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.3.0'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '~> 1.3.0'")
         end
@@ -188,7 +144,7 @@ describe Gemfile do
       it 'should support twiddle-wakka long form leaving existing if patch within existing requirement' do
         # equivalent to ~> 1.2.0
         GemfileLockFixture.create(@tmpdir, {foo: ['>= 1.2.0', '< 1.3.0']}, {foo: '1.2.5'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['1.2.7'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.2.7'])
           s.update
           # TODO: this is inconsistent, should probably change to ~> 1.2.7. Other cases
           # change the Gemfile to ensure it won't ever load a lower one. ... Except
@@ -206,7 +162,7 @@ describe Gemfile do
       it 'should support twiddle-wakka long form replacing req if patch outside existing requirement' do
         # equivalent to ~> 1.2.0
         GemfileLockFixture.create(@tmpdir, {foo: ['>= 1.2.0', '< 1.3.0']}, {foo: '1.2.5'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['1.3.0'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.3.0'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '~> 1.3.0'")
         end
@@ -214,7 +170,7 @@ describe Gemfile do
 
       it 'should support compound with twiddle-wakka if patch inside existing req' do
         GemfileLockFixture.create(@tmpdir, {foo: ['>= 1.2.1.2', '~> 1.2.1']}, {foo: '1.2.1.3'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['1.2.4'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.2.4'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '>= 1.2.1.2', '~> 1.2.1'")
         end
@@ -222,7 +178,7 @@ describe Gemfile do
 
       it 'should support compound with twiddle-wakka if patch outside existing req' do
         GemfileLockFixture.create(@tmpdir, {foo: ['>= 1.2.1.2', '~> 1.2.1']}, {foo: '1.2.1.3'}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['1.3.0'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.3.0'])
           s.update
           File.read('Gemfile').should have_line("gem 'foo', '~> 1.3.0'")
         end
@@ -230,7 +186,7 @@ describe Gemfile do
 
       it 'should be okay with whitespace variations' do
         GemfileLockFixture.create(@tmpdir, {' foo ': ' >   1.2 '}, {' foo ': ' 1.2.5    '}) do
-          s = Gemfile.new(target_dir: Dir.pwd, gem: 'foo', patched_versions: ['1.3.0'])
+          s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.3.0'])
           s.update
           File.read('Gemfile').should have_line("gem ' foo ', '>= 1.3.0'")
         end

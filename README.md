@@ -15,6 +15,8 @@
 
 ## Usage
 
+### Scan / Patch Security Vulnerable Gems
+
 To output the list of detected vulnerabilities in the current project:
 
     $ bundle-patch scan
@@ -29,13 +31,54 @@ To attempt to patch the detected vulnerabilities, use the `patch` command instea
 
     $ bundle-patch patch
 
-Same options apply.
+Same options apply. Read the next section for details on how bumps to release, minor and major versions work.
 
 For help:
 
-    $ bundle-patch help
     $ bundle-patch help scan
     $ bundle-patch help patch
+
+### Conservatively Update All Gems
+
+To update any gem conservatively, use the `update` command:
+
+    $ bundle-patch update 'foo bar'
+
+This will attempt to upgrade the `foo` and `bar` gems to the latest release version. (e.g. if the current version is
+`1.4.3` and the latest available `1.4.x` version is `1.4.8`, it will attempt to upgrade it to `1.4.8`). If any
+dependent gems need to be upgraded to a new minor or even major version, then it will do those as well, presuming the
+gem requirements specified in the `Gemfile` also allow it.
+
+If you want to restrict _any_ gem from being upgraded past the most recent release version, use `--strict` mode:
+
+    $ bundle-patch update 'foo bar' --strict
+
+This will eliminate any newer minor or major releases for any gem. If Bundler is unable to upgrade the requested gems
+due to the limitations, it will leave the requested gems at their current version.
+
+If you want to allow minor release upgrades (e.g. to allow an upgrade from `1.4.3` to `1.6.1`) use the `--minor_allowed`
+option.
+
+`--minor_allowed` (alias `-m`) and `--strict` (alias `-s`) can be used together or independently.
+
+While `--minor_allowed` is most useful in combination with the `--strict` option, it can also influence behavior when
+not in strict mode.
+
+For example, if an update to `foo` is requested, current version is `1.4.3` and `foo` has both `1.4.8` and `1.6.1`
+available, then without `--minor_allowed` and without `--strict`, `foo` itself will only be upgraded to `1.4.8`, though
+any gems further down the dependency tree could be upgraded to a new minor or major version if they have to be to use
+`foo 1.4.8`.
+
+Continuing the example, _with_ `--minor_allowed` (but still without `--strict`) `foo` itself would be upgraded to
+`1.6.1`, and as before any gems further down the dependency tree could be upgraded to a new minor or major version if
+they have to.
+
+To request conservative updates for the entire Gemfile, simply call `update`:
+
+    $ bundle-patch update
+
+There's no option to allow major version upgrades as this is the default behavior of `bundle update` in Bundler itself.
+
 
 ### Troubleshooting
 

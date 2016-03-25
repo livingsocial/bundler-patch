@@ -13,16 +13,18 @@ module Bundler::Patch
     def scan(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
       _scan(options)
 
-      if @specs.empty? then
+      if @specs.empty?
         puts @no_vulns_message
       else
         puts # extra line to separate from advisory db update text
         puts 'Detected vulnerabilities:'
         puts '-------------------------'
-        puts @specs.map(&:to_s).join("\n")
+        puts @specs.map(&:to_s).uniq.sort.join("\n")
       end
     end
 
+    option :strict, type: :boolean, desc: 'Remove undesired gem versions from index search results, causing dependency resolution to fail if conservative update cannot be accomplished.'
+    option :minor_allowed, type: :boolean, desc: 'By default, only the most recent release version of the current major.minor will be updated to. Set this option to allow upgrading to the most recent minor.release of the current major version.'
     option :advisory_db_path, type: :string, desc: 'Optional custom advisory db path.'
     # TODO: support strict and minor_allowed options?
     desc 'Scans current directory for known vulnerabilities and attempts to patch your files to fix them.'
@@ -31,19 +33,19 @@ module Bundler::Patch
       _scan(options)
 
       @specs.map(&:update)
-      gems = @specs.map(&:gems).flatten
+      gems = @specs.map(&:gem_name)
       if gems.empty?
         puts @no_vulns_message
       else
         gems_to_update = gems.uniq
         puts "Updating '#{gems_to_update.join(' ')}' to address vulnerabilities"
-        conservative_update(gems_to_update)
+        conservative_update(gems_to_update, options)
       end
     end
 
     option :strict, type: :boolean, desc: 'Remove undesired gem versions from index search results, causing dependency resolution to fail if conservative update cannot be accomplished.'
     option :minor_allowed, type: :boolean, desc: 'By default, only the most recent release version of the current major.minor will be updated to. Set this option to allow upgrading to the most recent minor.release of the current major version.'
-    # TODO: be nice to support space separated like real `bundle update`
+    # TODO: be nice to support array w/o quotes like real `bundle update`
     option :gems_to_update, type: :array, split: ' ', desc: 'Optional list of gems to update, in quotes, space delimited'
     desc 'Conservatively updates gems in the Gemfile based on current requirements.'
     config default_option: 'gems_to_update'
@@ -65,23 +67,20 @@ module Bundler::Patch
     end
 
     def _scan(options)
-      Bundler::Advise::Advisories.new.tap do |ads|
-        ads.update
-        @results = Bundler::Advise::GemAdviser.new(advisories: ads).scan_lockfile
-      end
+      all_ads = []
+      all_ads << Bundler::Advise::Advisories.new unless options[:skip_bundler_advise]
+      all_ads << Bundler::Advise::Advisories.new(dir: options[:advisory_db_path], repo: nil) if options[:advisory_db_path]
 
-      # TODO: this bit of duplication is a little stupid
-      if options[:advisory_db_path]
-        ads = Bundler::Advise::Advisories.new(dir: options[:advisory_db_path])
-        @results += Bundler::Advise::GemAdviser.new(advisories: ads).scan_lockfile
-      end
+      @results = all_ads.map do |ads|
+        ads.update if ads.repo
+        Bundler::Advise::GemAdviser.new(advisories: ads).scan_lockfile
+      end.flatten
 
       @specs = @results.map do |advisory|
         patched = advisory.patched_versions.map do |pv|
           pv.requirements.map { |_, v| v.to_s }
         end.flatten
-        gem = advisory.gem
-        Gemfile.new(gems: [gem], patched_versions: patched)
+        Gemfile.new(gem_name: advisory.gem, patched_versions: patched)
       end
     end
   end
@@ -106,6 +105,7 @@ module Bundler::Patch
       @bundler_def.gems_to_update = gems_to_update
       @bundler_def.strict = @options[:strict]
       @bundler_def.minor_allowed = @options[:minor_allowed]
+      @bundler_def
     end
   end
 end

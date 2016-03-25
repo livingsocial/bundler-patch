@@ -9,3 +9,4 @@ require 'bundler/patch'
 include Bundler::Patch
 
 require 'bundler/fixture'
+require_relative './fixture/gemfile_fixture'

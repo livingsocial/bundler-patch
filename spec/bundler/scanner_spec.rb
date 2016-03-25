@@ -9,9 +9,8 @@ describe Scanner do
     @bf.clean_up
   end
 
-  def test_conservative_update(gems_to_update, options, bundler_def)
-    prep = DefinitionPrep.new(bundler_def, gems_to_update, options).tap { |p| p.prep }
-    prep.bundler_def.lock(File.join(Dir.pwd, 'Gemfile.lock'))
+  def lockfile_spec_version(gem_name)
+    @bf.parsed_lockfile_spec(gem_name).version.to_s
   end
 
   context 'conservative update' do
@@ -29,8 +28,9 @@ describe Scanner do
       end
     end
 
-    def lockfile_spec_version(gem_name)
-      @bf.parsed_lockfile_spec(gem_name).version.to_s
+    def test_conservative_update(gems_to_update, options, bundler_def)
+      prep = DefinitionPrep.new(bundler_def, gems_to_update, options).tap { |p| p.prep }
+      prep.bundler_def.lock(File.join(Dir.pwd, 'Gemfile.lock'))
     end
 
     it 'when updated gem has same dep req' do
@@ -236,6 +236,7 @@ describe Scanner do
     it 'needs to cope with frozen setting'
     # see bundler-1.10.6/lib/bundler/installer.rb comments for explanation of frozen
 
+    it 'what happens when a new version introduces a brand new gem' #?
   end
 
   context 'spec processing' do
@@ -329,5 +330,51 @@ describe Scanner do
         versions(res).should == %w(2.4.0 2.4.1 2.5.0)
       end
     end
+  end
+
+  context 'security patching' do
+    before do
+      ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+    end
+
+    after do
+      ENV['BUNDLE_GEMFILE'] = nil
+    end
+
+    it 'integration' do
+      Dir.chdir(@bf.dir) do
+        # This is a weird combination of:
+        # - Fake advisory
+        # - Fake Gemfile and lock file
+        # - But based on a real gem and its versions in for realz rubygems.org
+
+        # Scanner now uses the full Bundler install code - which has a lot
+        # of hoops to jump through, and I found it easier to make that part
+        # for real.
+
+        ad = Bundler::Advise::Advisory.new(gem: 'rack', patched_versions: ['~> 1.4, >= 1.4.5'])
+        gem_dir = File.join(@bf.dir, 'gems', 'rack')
+        FileUtils.makedirs gem_dir
+        File.open(File.join(gem_dir, 'rack-patch.yml'), 'w') { |f| f.print ad.to_yaml }
+
+        GemfileLockFixture.create(@bf.dir, {rack: '1.4.4'})
+
+        ENV['DEBUG_RESOLVER'] = '1'
+
+        Scanner.new.patch(advisory_db_path: @bf.dir, skip_bundler_advise: true)
+
+        p File.read(File.join(@bf.dir, 'Gemfile'))
+
+        # OK - I see it now. The Gemfile behavior, which predates the Scanner now re-using
+        # the conservative_update behavior, doesn't match. Since the Gemfile in this case
+        # has a specific version specified, then, for the sake of a security update, it
+        # actually changes the Gemfile to match the most conservative version possible
+        # - 1.4.5. And Bundler won't override the exact version in the Gemfile.
+        lockfile_spec_version('rack').should == '1.4.7'
+      end
+    end
+
+    it 'multiple advisories resolving to different patches do not select most recent'
+    # rack, for example. 3 ads, ends up with 1.5.2 when it should be 1.5.4 at least.
   end
 end

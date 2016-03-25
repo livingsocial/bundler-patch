@@ -1,19 +1,19 @@
 module Bundler::Patch
   class Gemfile < UpdateSpec
-    attr_reader :gem
+    attr_reader :gem_name
 
     def initialize(target_dir: Dir.pwd,
-                   gem:,
+                   gem_name:,
                    patched_versions: [])
       super(target_file: 'Gemfile',
             target_dir: target_dir,
             patched_versions: patched_versions)
       # TODO: support Gem::Requirement in patched_versions
-      @gem = gem
+      @gem_name = gem_name
     end
 
     def to_s
-      "#{@gem} #{patched_versions}"
+      "#{@gem_name} #{patched_versions}"
     end
 
     def update
@@ -34,7 +34,7 @@ module Bundler::Patch
       # We'll still instance_eval the gem line though, to properly
       # handle the various options and possible multiple reqs.
       @target_file = 'Gemfile'
-      @regexes = /^\s*gem.*['"]\s*#{@gem}\s*['"].*$/
+      @regexes = /^\s*gem.*['"]\s*#{@gem_name}\s*['"].*$/
       file_replace do |match, re|
         update_to_new_gem_version(match)
       end

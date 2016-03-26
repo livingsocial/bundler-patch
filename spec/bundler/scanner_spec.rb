@@ -356,19 +356,50 @@ describe Scanner do
         FileUtils.makedirs gem_dir
         File.open(File.join(gem_dir, 'rack-patch.yml'), 'w') { |f| f.print ad.to_yaml }
 
-        GemfileLockFixture.create(@bf.dir, ['rack'], {rack: '1.4.4'})
-
-        ENV['DEBUG_RESOLVER'] = '1'
+        GemfileLockFixture.create(@bf.dir,
+                                  {rack: nil, git: '~> 1.2'},
+                                  {rack: '1.4.4', git: '1.2.8'})
 
         Scanner.new.patch(advisory_db_path: @bf.dir, skip_bundler_advise: true)
 
-        p File.read(File.join(@bf.dir, 'Gemfile'))
-
         lockfile_spec_version('rack').should == '1.4.7'
+        lockfile_spec_version('git').should == '1.2.8'
       end
     end
 
-    it 'multiple advisories resolving to different patches do not select most recent'
-    # rack, for example. 3 ads, ends up with 1.5.2 when it should be 1.5.4 at least.
+    it 'could offer option to include update parent gems with incompatible requirements'
+    # the goal of applying a security patch is to get the security patch in place. The
+    # tool could help id a parent gem that has an incompatible requirement with the
+    # necessary patch version
+
+  end
+
+  context 'advisory consolidator' do
+    it 'should consolidate multiple advisories for same gem' do
+      pending('this has a failing test - not ready to fix it yet')
+      # rack has multiple advisories that if applied in a default
+      # sequential order leave the gem on an insecure version.
+
+      Dir.chdir(@bf.dir) do
+        ads = [].tap do |a|
+          a << Bundler::Advise::Advisory.new(gem: 'rack', patched_versions: ['~> 1.1.6', '~> 1.2.8', '~> 1.3.10', '~> 1.4.5', '>= 1.5.2'])
+          a << Bundler::Advise::Advisory.new(gem: 'rack', patched_versions: ['~> 1.4.5', '>= 1.5.2'])
+          a << Bundler::Advise::Advisory.new(gem: 'rack', patched_versions: ['>= 1.6.2', '~> 1.5.4', '~> 1.4.6'])
+        end
+
+        gem_dir = File.join(@bf.dir, 'gems', 'rack')
+        FileUtils.makedirs gem_dir
+        ads.each_with_index do |ad, i|
+          File.open(File.join(gem_dir, "rack-patch-#{i}.yml"), 'w') { |f| f.print ad.to_yaml }
+        end
+
+        GemfileLockFixture.create(@bf.dir, {rack: '1.4.4'})
+
+        all_ads = [Bundler::Advise::Advisories.new(dir: @bf.dir, repo: nil)]
+        ac = AdvisoryConsolidator.new({}, all_ads)
+        res = ac.scan_lockfile
+        res.first.patched_versions.should == %w(1.1.6 1.2.8 1.3.10 1.4.6 1.5.4 1.6.2)
+      end
+    end
   end
 end

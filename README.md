@@ -94,6 +94,11 @@ Adding to the usual Bundler complexity, `bundler-patch` is injecting its own log
 its goals. If there's a bug involved, it's almost certainly in the `bundler-patch` code as Bundler has been around a
 long time and has thorough testing and real world experience.
 
+In particular, grep for 'Unwinding for conflict' to isolate some key issues that may be preventing the outcome you
+expect.
+
+`bundler-patch` can dump its own debug output, potentially helpful, with `DEBUG_PATCH_RESOLVER`.
+
 
 
 ## Development

@@ -66,16 +66,26 @@ module Bundler::Patch
     end
 
     def _scan(options)
-      all_ads = []
-      all_ads << Bundler::Advise::Advisories.new unless options[:skip_bundler_advise]
-      all_ads << Bundler::Advise::Advisories.new(dir: options[:advisory_db_path], repo: nil) if options[:advisory_db_path]
+      @specs = AdvisoryConsolidator.new(options).scan_lockfile
+    end
+  end
 
-      @results = all_ads.map do |ads|
+  class AdvisoryConsolidator
+    def initialize(options={}, all_ads=nil)
+      @options = options
+      @all_ads = all_ads || [].tap do |a|
+        a << Bundler::Advise::Advisories.new unless options[:skip_bundler_advise]
+        a << Bundler::Advise::Advisories.new(dir: options[:advisory_db_path], repo: nil) if options[:advisory_db_path]
+      end
+    end
+
+    def scan_lockfile
+      results = @all_ads.map do |ads|
         ads.update if ads.repo
         Bundler::Advise::GemAdviser.new(advisories: ads).scan_lockfile
       end.flatten
 
-      @specs = @results.map do |advisory|
+      @specs = results.map do |advisory|
         patched = advisory.patched_versions.map do |pv|
           pv.requirements.map { |_, v| v.to_s }
         end.flatten
@@ -132,20 +142,18 @@ class ConservativeResolver < Bundler::Resolver
       (@strict ?
         filter_specs(res, unlocking_gem, locked_spec) :
         sort_specs(res, unlocking_gem, locked_spec)).tap do |res|
-        if ENV['DEBUG_RESOLVER']
+        if ENV['DEBUG_PATCH_RESOLVER']
           # TODO: if we keep this, gotta go through Bundler.ui
           begin
-            p '-' * 80
             if res
-              p res
-              p [gem_name, res.map { |sg| [sg.version, sg.dependencies_for_activated_platforms.map { |dp| [dp.name, dp.requirement.to_s] }] }]
+              a = [gem_name, res.map { |sg| [sg.version, sg.dependencies_for_activated_platforms.map { |dp| [dp.name, dp.requirement.to_s] }] }]
+              p [a.first, a.last.first.first.version, a.last.first.last.map { |a| a.join(' ') }]
             else
               p "No res for #{gem_name}. Orig res: #{super(dependency)}"
             end
           rescue => e
             p [e.message, e.backtrace[0..5]]
           end
-          p '-' * 80
         end
       end
     end

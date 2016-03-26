@@ -191,6 +191,8 @@ describe Gemfile do
           File.read('Gemfile').should have_line("gem ' foo ', '>= 1.3.0'")
         end
       end
+
+      it 'should reconcile multiple '
     end
 
     describe 'Insecure sources' do
@@ -208,6 +210,12 @@ describe Gemfile do
     describe '.gemspec files' do
       it 'should support .gemspec files too'
     end
+
+    it 'could have command to update all specific versions to twiddle-waka'
+
+    it 'could have command to update all too-specific twiddle-waka to less specific'
+
+    it 'could have command to update all greater than or equal to to twiddle-waka'
   end
 end
 

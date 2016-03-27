@@ -7,6 +7,7 @@ end
 
 require 'bundler/patch/updater'
 require 'bundler/patch/gemfile'
+require 'bundler/patch/advisory_consolidator'
 require 'bundler/patch/ruby_version'
 require 'bundler/patch/scanner'
 require 'bundler/patch/version'

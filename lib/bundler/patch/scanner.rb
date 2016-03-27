@@ -66,7 +66,7 @@ module Bundler::Patch
     end
 
     def _scan(options)
-      @specs = AdvisoryConsolidator.new(options).scan_lockfile
+      @specs = AdvisoryConsolidator.new(options).vulnerable_gems
     end
   end
 
@@ -79,17 +79,47 @@ module Bundler::Patch
       end
     end
 
-    def scan_lockfile
+    def vulnerable_gems
       results = @all_ads.map do |ads|
         ads.update if ads.repo
         Bundler::Advise::GemAdviser.new(advisories: ads).scan_lockfile
       end.flatten
 
-      @specs = results.map do |advisory|
+      results.map do |advisory|
         patched = advisory.patched_versions.map do |pv|
           pv.requirements.map { |_, v| v.to_s }
         end.flatten
         Gemfile.new(gem_name: advisory.gem, patched_versions: patched)
+      end
+    end
+  end
+
+  class PatchAnalysis
+    def initialize(lockfile=nil)
+      @lockfile = lockfile || Bundler::LockfileParser.new(Bundler.read_file('Gemfile.lock'))
+    end
+
+    def check_gem(gem_name, version)
+      checking_gem = Gem::Specification.new(gem_name, version)
+      conflicting_specs = []
+      @lockfile.specs.each do |s|
+        dep = s.dependencies.detect { |d| d.name == gem_name }
+        conflicting_specs << s if dep unless dep =~ checking_gem
+      end
+      Result.new(patchable: conflicting_specs.empty?,
+                 conflicting_specs: conflicting_specs)
+    end
+
+    class Result
+      attr_reader :conflicting_specs
+
+      def initialize(patchable:, conflicting_specs: [])
+        @patchable = patchable
+        @conflicting_specs = conflicting_specs
+      end
+
+      def patchable?
+        @patchable
       end
     end
   end

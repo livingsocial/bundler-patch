@@ -376,15 +376,18 @@ describe Scanner do
 
   context 'advisory consolidator' do
     it 'should consolidate multiple advisories for same gem' do
-      pending('this has a failing test - not ready to fix it yet')
       # rack has multiple advisories that if applied in a default
       # sequential order leave the gem on an insecure version.
 
       Dir.chdir(@bf.dir) do
         ads = [].tap do |a|
-          a << Bundler::Advise::Advisory.new(gem: 'rack', patched_versions: ['~> 1.1.6', '~> 1.2.8', '~> 1.3.10', '~> 1.4.5', '>= 1.5.2'])
-          a << Bundler::Advise::Advisory.new(gem: 'rack', patched_versions: ['~> 1.4.5', '>= 1.5.2'])
-          a << Bundler::Advise::Advisory.new(gem: 'rack', patched_versions: ['>= 1.6.2', '~> 1.5.4', '~> 1.4.6'])
+          [
+            ['~> 1.1.6', '~> 1.2.8', '~> 1.3.10', '~> 1.4.5', '>= 1.5.2'],
+            ['~> 1.4.5', '>= 1.5.2'],
+            ['>= 1.6.2', '~> 1.5.4', '~> 1.4.6']
+          ].each do |patch_group|
+            a << Bundler::Advise::Advisory.new(gem: 'rack', patched_versions: patch_group)
+          end
         end
 
         gem_dir = File.join(@bf.dir, 'gems', 'rack')
@@ -399,6 +402,7 @@ describe Scanner do
         ac = AdvisoryConsolidator.new({}, all_ads)
         res = ac.vulnerable_gems
         res.first.patched_versions.should == %w(1.1.6 1.2.8 1.3.10 1.4.6 1.5.4 1.6.2)
+        res.length.should == 1
       end
     end
   end

@@ -48,10 +48,12 @@ describe Scanner do
       end
     end
 
-    it 'could offer option to include update parent gems with incompatible requirements'
-    # the goal of applying a security patch is to get the security patch in place. The
-    # tool could help id a parent gem that has an incompatible requirement with the
-    # necessary patch version
+    it 'could do better conservative update for patching to a security version'
+    # when a gem is NOT unlocked, then Bundler itself locks the used version in place.
+    # that's the point. `patch` currently only unlocks the vulnerable gems.
+    # What `patch` should do is a special conservative update of ALL gems that truly
+    # keeps everything at its current, a complete reverse of filter_specs, not a special
+    # sort - just a complete reverse.
 
   end
 end

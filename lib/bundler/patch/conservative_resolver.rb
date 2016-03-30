@@ -27,7 +27,7 @@ module Bundler::Patch
             begin
               if res
                 a = [gem_name, res.map { |sg| [sg.version, sg.dependencies_for_activated_platforms.map { |dp| [dp.name, dp.requirement.to_s] }] }]
-                p [a.first, a.last.first.first.version, a.last.first.last.map { |a| a.join(' ') }]
+                p [a.first, a.last.map { |sg_data| [sg_data.first.version, sg_data.last.map { |aa| aa.join(' ') }] }]
               else
                 p "No res for #{gem_name}. Orig res: #{super(dependency)}"
               end

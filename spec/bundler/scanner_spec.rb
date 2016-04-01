@@ -33,17 +33,12 @@ describe Scanner do
       Dir.chdir(@bf.dir) do
         add_fake_advisory(gem: 'rack', patched_versions: ['~> 1.4, >= 1.4.5'])
 
-        fixture = PathedGemfileLockFixture.create(@bf.dir,
-                                                  {
-                                                    rack: nil,
-                                                    git: '~> 1.2',
-                                                  },
-                                                  {
-                                                    rack: '1.4.4',
-                                                    git: '1.2.8',
-                                                  })
-
-        fixture.make_fake_gem(@bf.dir, 'rack', '1.4.7')
+        PathedGemfileLockFixture.create(
+          dir: @bf.dir,
+          gems: {rack: nil, git: '~> 1.2'},
+          locks: {rack: '1.4.4', git: '1.2.8'},
+          sources: {rack: '1.4.7'}
+        )
 
         Bundler.with_clean_env do
           Scanner.new.patch(advisory_db_path: @bf.dir, skip_bundler_advise: true)
@@ -65,6 +60,15 @@ describe Scanner do
 end
 
 class PathedGemfileLockFixture < GemfileLockFixture
+  def self.create(dir:, gems: {}, locks: nil, sources: [])
+    self.new(dir: dir, gems: gems, locks: locks).tap do |fix|
+      fix.create_gemfile
+      fix.create_gemfile_lock
+      fix.make_fake_gems
+      sources.each { |name, version| fix.make_fake_gem(name, version) }
+    end
+  end
+
   def create_gemfile
     lines = []
     dir = File.join(@dir, 'pathed_gems')
@@ -77,17 +81,15 @@ class PathedGemfileLockFixture < GemfileLockFixture
     lines << 'end'
     write_lines(lines, 'Gemfile')
 
-    make_fake_gems(@dir)
-
     File.join(@dir, 'Gemfile')
   end
 
-  def make_fake_gems(root_dir)
-    (@locks || @gems).map { |name, version| make_fake_gem(root_dir, name, version) }
+  def make_fake_gems
+    (@locks || @gems).map { |name, version| make_fake_gem(name, version) }
   end
 
-  def make_fake_gem(root_dir, name, version)
-    gem_dir = File.join(root_dir, 'pathed_gems')
+  def make_fake_gem(name, version)
+    gem_dir = File.join(@dir, 'pathed_gems')
     FileUtils.makedirs(gem_dir)
     contents = <<-CONTENT
 Gem::Specification.new do |s|

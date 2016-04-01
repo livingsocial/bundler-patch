@@ -3,8 +3,8 @@
 # doesn't include that yet. Though it prolly should.
 # TODO: PR to bundler-fixture to include Gemfile
 class GemfileLockFixture
-  def self.create(dir, gems={}, locks=nil)
-    fix = self.new(dir, gems, locks).tap do |fix|
+  def self.create(dir:, gems: {}, locks: nil)
+    fix = self.new(dir: dir, gems: gems, locks: locks).tap do |fix|
       fix.create_gemfile
       fix.create_gemfile_lock
     end
@@ -18,7 +18,7 @@ class GemfileLockFixture
 
   attr_reader :dir, :gems, :locks
 
-  def initialize(dir, gems, locks=nil)
+  def initialize(dir:, gems:, locks: nil)
     @dir = dir
     @gems = gems
     @locks = locks

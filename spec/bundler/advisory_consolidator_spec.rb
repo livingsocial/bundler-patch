@@ -31,7 +31,7 @@ describe Scanner do
           File.open(File.join(gem_dir, "rack-patch-#{i}.yml"), 'w') { |f| f.print ad.to_yaml }
         end
 
-        GemfileLockFixture.create(@bf.dir, {rack: '1.4.4'})
+        GemfileLockFixture.create(dir: @bf.dir, gems: {rack: '1.4.4'})
 
         all_ads = [Bundler::Advise::Advisories.new(dir: @bf.dir, repo: nil)]
         ac = AdvisoryConsolidator.new({}, all_ads)

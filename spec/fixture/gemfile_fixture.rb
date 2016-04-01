@@ -47,3 +47,70 @@ class GemfileLockFixture
   end
 end
 
+class PathedGemfileLockFixture < GemfileLockFixture
+  def self.create(dir:, gems: {}, locks: nil, sources: [])
+    self.new(dir: dir, gems: gems, locks: locks).tap do |fix|
+      fix.create_gemfile
+      fix.create_gemfile_lock
+      fix.make_fake_gems
+      Array(sources).each { |spec| fix.make_fake_gem(spec) }
+    end
+  end
+
+  def create_gemfile
+    lines = []
+    dir = File.join(@dir, 'pathed_gems')
+    lines << "path '#{dir}' do"
+    @gems.each do |name, versions|
+      line = "  gem '#{name}'"
+      Array(versions).each { |version| line << ", '#{version}'" } if versions
+      lines << line
+    end
+    lines << 'end'
+    write_lines(lines, 'Gemfile')
+
+    File.join(@dir, 'Gemfile')
+  end
+
+  def make_fake_gems
+    (@locks || @gems).map { |name, version| make_fake_gem(create_spec(name, version)) }
+  end
+
+  def make_fake_gem(spec)
+    name, version = [spec.name, spec.version]
+    gem_dir = File.join(@dir, 'pathed_gems')
+    FileUtils.makedirs(gem_dir)
+    deps = spec.dependencies.map do |dep|
+      "  s.add_dependency '#{dep.name}'".tap { |s| s << ", '#{dep.requirement}'" if dep.requirement }
+    end
+
+    contents = <<-CONTENT
+Gem::Specification.new do |s|
+  s.name            = "#{name}"
+  s.version         = "#{version}"
+  s.platform        = Gem::Platform::RUBY
+  s.summary         = "Fake #{name}"
+  s.authors         = %w(chrismo)
+
+#{deps.join("\n")}
+end
+    CONTENT
+
+    File.open(File.join(gem_dir, "#{name}-#{version}.gemspec"), 'w') { |f| f.print contents }
+  end
+
+  def create_spec(name, version, dependencies={})
+    self.class.create_spec(name, version, dependencies)
+  end
+
+  def self.create_spec(name, version, dependencies={})
+    Gem::Specification.new do |s|
+      s.name = name
+      s.version = Gem::Version.new(version)
+      s.platform = 'ruby'
+      dependencies.each do |name, requirement|
+        s.add_dependency name, requirement
+      end
+    end
+  end
+end

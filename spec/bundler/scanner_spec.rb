@@ -31,21 +31,34 @@ describe Scanner do
 
     it 'integration' do
       Dir.chdir(@bf.dir) do
-        add_fake_advisory(gem: 'rack', patched_versions: ['~> 1.4, >= 1.4.5'])
+        add_fake_advisory(gem: 'foo', patched_versions: ['~> 1.4, >= 1.4.5'])
+        add_fake_advisory(gem: 'nuu', patched_versions: ['~> 0.2, >= 0.2.2'])
 
-        PathedGemfileLockFixture.create(
-          dir: @bf.dir,
-          gems: {rack: nil, git: '~> 1.2'},
-          locks: {rack: '1.4.4', git: '1.2.8'},
-          sources: {rack: '1.4.7'}
-        )
+        PathedGemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {foo: nil, bar: '~> 1.2', tea: nil, nuu: '0.2.0'},
+                     locks: {foo: '1.4.4', bar: '1.2.8', tea: '3.2.0', nuu: '0.2.0'},
+                     sources: [fix.create_spec(:foo, '1.4.7', {wat: '>= 1.2.0'}),
+                               fix.create_spec(:wat, '1.2.3'),
+                               fix.create_spec(:tea, '3.2.0', {nuu: '~> 0.1.0'}),
+                               fix.create_spec(:tea, '3.2.3', {nuu: '>= 0.2'}),
+                               fix.create_spec(:nuu, '0.2.2'),
+                     ])
+        end
 
         Bundler.with_clean_env do
+          #ENV['DEBUG_PATCH_RESOLVER'] = '1'
+          #ENV['DEBUG_RESOLVER'] = '1'
           Scanner.new.patch(advisory_db_path: @bf.dir, skip_bundler_advise: true)
         end
 
-        lockfile_spec_version('rack').should == '1.4.7' # upgraded because fake advisory
-        lockfile_spec_version('git').should == '1.2.8' # stays put because nothing to change it
+        lockfile_spec_version('foo').should == '1.4.7' # upgraded because fake advisory
+        lockfile_spec_version('wat').should == '1.2.3' # foo upgrade brings new dependency
+
+        lockfile_spec_version('nuu').should == '0.2.2' # upgraded because fake advisory
+        lockfile_spec_version('tea').should == '3.2.3' # upgraded to keep compatible with nuu 0.2.2
+
+        lockfile_spec_version('bar').should == '1.2.8' # stays put because nothing to change it
       end
     end
 
@@ -56,53 +69,5 @@ describe Scanner do
     # keeps everything at its current, a complete reverse of filter_specs, not a special
     # sort - just a complete reverse.
 
-  end
-end
-
-class PathedGemfileLockFixture < GemfileLockFixture
-  def self.create(dir:, gems: {}, locks: nil, sources: [])
-    self.new(dir: dir, gems: gems, locks: locks).tap do |fix|
-      fix.create_gemfile
-      fix.create_gemfile_lock
-      fix.make_fake_gems
-      sources.each { |name, version| fix.make_fake_gem(name, version) }
-    end
-  end
-
-  def create_gemfile
-    lines = []
-    dir = File.join(@dir, 'pathed_gems')
-    lines << "path '#{dir}' do"
-    @gems.each do |name, versions|
-      line = "  gem '#{name}'"
-      Array(versions).each { |version| line << ", '#{version}'" } if versions
-      lines << line
-    end
-    lines << 'end'
-    write_lines(lines, 'Gemfile')
-
-    File.join(@dir, 'Gemfile')
-  end
-
-  def make_fake_gems
-    (@locks || @gems).map { |name, version| make_fake_gem(name, version) }
-  end
-
-  def make_fake_gem(name, version)
-    gem_dir = File.join(@dir, 'pathed_gems')
-    FileUtils.makedirs(gem_dir)
-    contents = <<-CONTENT
-Gem::Specification.new do |s|
-  s.name            = "#{name}"
-  s.version         = "#{version}"
-  s.platform        = Gem::Platform::RUBY
-  s.summary         = "Fake #{name}"
-  s.authors         = %w(chrismo)
-
-  # s.add_dependency 'bacon'
-end
-    CONTENT
-
-    File.open(File.join(gem_dir, "#{name}-#{version}.gemspec"), 'w') { |f| f.print contents }
   end
 end

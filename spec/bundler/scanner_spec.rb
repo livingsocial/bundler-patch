@@ -22,29 +22,35 @@ describe Scanner do
       ENV['BUNDLE_GEMFILE'] = nil
     end
 
+    def add_fake_advisory(gem:, patched_versions:)
+      ad = Bundler::Advise::Advisory.new(gem: gem, patched_versions: patched_versions)
+      gem_dir = File.join(@bf.dir, 'gems', gem)
+      FileUtils.makedirs gem_dir
+      File.open(File.join(gem_dir, "#{gem}-patch.yml"), 'w') { |f| f.print ad.to_yaml }
+    end
+
     it 'integration' do
       Dir.chdir(@bf.dir) do
-        # This is a weird combination of:
-        # - Fake advisory
-        # - Real gem and its real versions @ rubygems.org
+        add_fake_advisory(gem: 'rack', patched_versions: ['~> 1.4, >= 1.4.5'])
 
-        # Scanner now uses the full Bundler install code - which has a lot
-        # of hoops to jump through, and I found it easier to make that part
-        # for real.
+        fixture = PathedGemfileLockFixture.create(@bf.dir,
+                                                  {
+                                                    rack: nil,
+                                                    git: '~> 1.2',
+                                                  },
+                                                  {
+                                                    rack: '1.4.4',
+                                                    git: '1.2.8',
+                                                  })
 
-        ad = Bundler::Advise::Advisory.new(gem: 'rack', patched_versions: ['~> 1.4, >= 1.4.5'])
-        gem_dir = File.join(@bf.dir, 'gems', 'rack')
-        FileUtils.makedirs gem_dir
-        File.open(File.join(gem_dir, 'rack-patch.yml'), 'w') { |f| f.print ad.to_yaml }
+        fixture.make_fake_gem(@bf.dir, 'rack', '1.4.7')
 
-        GemfileLockFixture.create(@bf.dir,
-                                  {rack: nil, git: '~> 1.2'},
-                                  {rack: '1.4.4', git: '1.2.8'})
+        Bundler.with_clean_env do
+          Scanner.new.patch(advisory_db_path: @bf.dir, skip_bundler_advise: true)
+        end
 
-        Scanner.new.patch(advisory_db_path: @bf.dir, skip_bundler_advise: true)
-
-        lockfile_spec_version('rack').should == '1.4.7'
-        lockfile_spec_version('git').should == '1.2.8'
+        lockfile_spec_version('rack').should == '1.4.7' # upgraded because fake advisory
+        lockfile_spec_version('git').should == '1.2.8' # stays put because nothing to change it
       end
     end
 
@@ -55,5 +61,46 @@ describe Scanner do
     # keeps everything at its current, a complete reverse of filter_specs, not a special
     # sort - just a complete reverse.
 
+  end
+end
+
+class PathedGemfileLockFixture < GemfileLockFixture
+  def create_gemfile
+    lines = []
+    dir = File.join(@dir, 'pathed_gems')
+    lines << "path '#{dir}' do"
+    @gems.each do |name, versions|
+      line = "  gem '#{name}'"
+      Array(versions).each { |version| line << ", '#{version}'" } if versions
+      lines << line
+    end
+    lines << 'end'
+    write_lines(lines, 'Gemfile')
+
+    make_fake_gems(@dir)
+
+    File.join(@dir, 'Gemfile')
+  end
+
+  def make_fake_gems(root_dir)
+    (@locks || @gems).map { |name, version| make_fake_gem(root_dir, name, version) }
+  end
+
+  def make_fake_gem(root_dir, name, version)
+    gem_dir = File.join(root_dir, 'pathed_gems')
+    FileUtils.makedirs(gem_dir)
+    contents = <<-CONTENT
+Gem::Specification.new do |s|
+  s.name            = "#{name}"
+  s.version         = "#{version}"
+  s.platform        = Gem::Platform::RUBY
+  s.summary         = "Fake #{name}"
+  s.authors         = %w(chrismo)
+
+  # s.add_dependency 'bacon'
+end
+    CONTENT
+
+    File.open(File.join(gem_dir, "#{name}-#{version}.gemspec"), 'w') { |f| f.print contents }
   end
 end

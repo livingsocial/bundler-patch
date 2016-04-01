@@ -13,6 +13,7 @@ class GemfileLockFixture
         yield fix.dir
       end
     end
+    fix
   end
 
   attr_reader :dir, :gems, :locks

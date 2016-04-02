@@ -230,9 +230,32 @@ describe Scanner do
       end
     end
 
+    it 'passing gem dependencies as gems_to_update can force a gem to a specific version' do
+      setup_lockfile do
+        gems_to_update = [@bf.create_dependency('foo'), @bf.create_dependency('quux', '2.4.0')]
+        bundler_def = @bf.create_definition(
+          gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
+          source_specs: [
+            @bf.create_spec('foo', '2.4.0', [['bar', '>= 1.0.4']]),
+            @bf.create_spec('foo', '2.5.0', [['bar', '>= 1.0.4']]),
+            @bf.create_spec('bar', '1.1.2'),
+            @bf.create_spec('bar', '1.1.3'),
+            @bf.create_spec('bar', '3.2.0'),
+            @bf.create_spec('quux', '0.2.0'),
+            @bf.create_spec('quux', '2.4.0'),
+          ], ensure_sources: false, update_gems: gems_to_update.map(&:name))
+        test_conservative_update(gems_to_update, {strict: true, minor_allowed: true}, bundler_def)
+
+        lockfile_spec_version('bar').should == '1.1.3'
+        lockfile_spec_version('foo').should == '2.5.0'
+        lockfile_spec_version('quux').should == '2.4.0'
+      end
+    end
+
     it 'the caching caused the not-a-conflict job_board json conflict'
 
     it 'needs to pass-through all install or update bundler options'
+    # re-designing this as a bundler plugin as the thang here
     it 'needs to cope with frozen setting'
     # see bundler-1.10.6/lib/bundler/installer.rb comments for explanation of frozen
 

@@ -53,7 +53,7 @@ class PathedGemfileLockFixture < GemfileLockFixture
       fix.create_gemfile
       fix.create_gemfile_lock
       fix.make_fake_gems
-      Array(sources).each { |spec| fix.make_fake_gem(spec) }
+      Array(sources).flatten.each { |spec| fix.make_fake_gem(spec) }
     end
   end
 
@@ -112,5 +112,9 @@ end
         s.add_dependency name, requirement
       end
     end
+  end
+
+  def self.create_specs(name, versions, dependencies={})
+    Array(versions).map { |v| create_spec(name, v, dependencies) }
   end
 end

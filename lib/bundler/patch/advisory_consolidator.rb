@@ -14,6 +14,7 @@ module Bundler::Patch
         Bundler::Advise::GemAdviser.new(advisories: ads).scan_lockfile
       end.flatten.map do |advisory|
         patched = advisory.patched_versions.map do |pv|
+          # this is a little stupid for compound requirements, but works itself out in consolidate_gemfiles
           pv.requirements.map { |_, v| v.to_s }
         end.flatten
         Gemfile.new(gem_name: advisory.gem, patched_versions: patched)

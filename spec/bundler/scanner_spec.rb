@@ -57,25 +57,31 @@ describe Scanner do
       Dir.chdir(@bf.dir) do
         add_fake_advisory(gem: 'nuu', patched_versions: ['~> 0.2, >= 0.2.2'])
 
+        # patched needs to be a minor upgrade in this case too
         PathedGemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
-                     gems: {tea: nil},
-                     locks: {tea: '3.2.0', nuu: '0.1.0'},
+                     gems: {tea: nil, baz: nil},
+                     locks: {tea: '3.2.0', nuu: '0.1.0', baz: '1.0.0'},
                      sources: [fix.create_spec(:tea, '3.2.0', {nuu: '~> 0.1.0'}),
                                fix.create_spec(:tea, '3.2.3', {nuu: '>= 0.2'}),
-                               fix.create_spec(:nuu, '0.2.2')])
+                               fix.create_spec(:nuu, '0.2.2'),
+                               fix.create_spec(:baz, '1.0.0'),
+                               fix.create_specs(:baz, %w(1.0.1 1.1.0 2.0.0))])
         end
 
         Bundler.with_clean_env do
-          #ENV['DEBUG_PATCH_RESOLVER'] = '1'
-          #ENV['DEBUG_RESOLVER'] = '1'
           Scanner.new.patch(advisory_db_path: @bf.dir, skip_bundler_advise: true)
         end
 
         lockfile_spec_version('nuu').should == '0.2.2' # upgraded because fake advisory
         lockfile_spec_version('tea').should == '3.2.3' # upgraded to keep compatible with nuu 0.2.2
+        lockfile_spec_version('baz').should == '1.0.0' # baz is not involved, should stay put
+
+        # May need to also:
+        # What `patch` should do is a special conservative update of ALL gems that truly
+        # keeps everything at its current, a complete reverse of filter_specs, not a special
+        # sort - just a complete reverse.
       end
     end
-
   end
 end

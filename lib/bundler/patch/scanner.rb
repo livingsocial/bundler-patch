@@ -13,13 +13,13 @@ module Bundler::Patch
     def scan(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
       _scan(options)
 
-      if @specs.empty?
+      if @gem_patches.empty?
         puts @no_vulns_message
       else
         puts # extra line to separate from advisory db update text
         puts 'Detected vulnerabilities:'
         puts '-------------------------'
-        puts @specs.map(&:to_s).uniq.sort.join("\n")
+        puts @gem_patches.map(&:to_s).uniq.sort.join("\n")
       end
     end
 
@@ -31,13 +31,18 @@ module Bundler::Patch
     def patch(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
       _scan(options)
 
-      @specs.map(&:update)
-      gems = @specs.map(&:gem_name)
-      if gems.empty?
+      @gem_patches.map(&:update)
+      locked = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile)).specs
+
+      gems_to_update = @gem_patches.map do |p|
+        nv = p.calc_new_version(locked.detect { |s| s.name == p.gem_name }.version.to_s)
+        Gem::Dependency.new(p.gem_name, nv)
+      end
+
+      if gems_to_update.empty?
         puts @no_vulns_message
       else
-        gems_to_update = gems.uniq
-        puts "Updating '#{gems_to_update.join(' ')}' to address vulnerabilities"
+        puts "Updating '#{gems_to_update.map(&:name).join(' ')}' to address vulnerabilities"
         conservative_update(gems_to_update, options)
       end
     end
@@ -66,7 +71,7 @@ module Bundler::Patch
     end
 
     def _scan(options)
-      @specs = AdvisoryConsolidator.new(options).vulnerable_gems
+      @gem_patches = AdvisoryConsolidator.new(options).vulnerable_gems
     end
   end
 end

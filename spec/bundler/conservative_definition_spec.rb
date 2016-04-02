@@ -232,7 +232,7 @@ describe Scanner do
 
     it 'passing gem dependencies as gems_to_update can force a gem to a specific version' do
       setup_lockfile do
-        gems_to_update = [@bf.create_dependency('foo'), @bf.create_dependency('quux', '2.4.0')]
+        gems_to_update = ['foo', @bf.create_spec('quux', '2.4.0')]
         bundler_def = @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
           source_specs: [
@@ -243,7 +243,7 @@ describe Scanner do
             @bf.create_spec('bar', '3.2.0'),
             @bf.create_spec('quux', '0.2.0'),
             @bf.create_spec('quux', '2.4.0'),
-          ], ensure_sources: false, update_gems: gems_to_update.map(&:name))
+          ], ensure_sources: false, update_gems: %w(foo quux))
         test_conservative_update(gems_to_update, {strict: true, minor_allowed: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.3'

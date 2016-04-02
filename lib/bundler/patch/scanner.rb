@@ -36,7 +36,7 @@ module Bundler::Patch
 
       gems_to_update = @gem_patches.map do |p|
         nv = p.calc_new_version(locked.detect { |s| s.name == p.gem_name }.version.to_s)
-        Gem::Dependency.new(p.gem_name, nv)
+        Gem::Specification.new(p.gem_name, nv)
       end
 
       if gems_to_update.empty?

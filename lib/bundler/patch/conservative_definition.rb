@@ -86,16 +86,10 @@ module Bundler::Patch
     end
 
     def fixup_locked_specs(locked_specs)
-      @gems_to_update.each do |up_dep|
-        next unless up_dep.respond_to?(:name)
-        to_fix = locked_specs[up_dep.name]
-        # HAX: this is abusing Gem::Dependency's Gem::Requirement a touch. But hey.
-        # TODO: try spec instead?
-        requirement = up_dep.requirement
-        unless requirement == Gem::Requirement.default
-          new_version = requirement.requirements.first.last
-          to_fix.first.instance_variable_set('@version', new_version)
-        end
+      @gems_to_update.each do |up_spec|
+        next unless up_spec.respond_to?(:name)
+        to_fix = locked_specs[up_spec.name]
+        to_fix.first.instance_variable_set('@version', up_spec.version)
       end
     end
   end

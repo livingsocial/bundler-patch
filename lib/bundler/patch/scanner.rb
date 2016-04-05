@@ -12,15 +12,15 @@ module Bundler::Patch
 
     def scan(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
       header
-      _scan(options)
+      gem_patches = AdvisoryConsolidator.new(options).vulnerable_gems
 
-      if @gem_patches.empty?
+      if gem_patches.empty?
         puts @no_vulns_message
       else
         puts # extra line to separate from advisory db update text
         puts 'Detected vulnerabilities:'
         puts '-------------------------'
-        puts @gem_patches.map(&:to_s).uniq.sort.join("\n")
+        puts gem_patches.map(&:to_s).uniq.sort.join("\n")
       end
     end
 
@@ -31,17 +31,8 @@ module Bundler::Patch
 
     def patch(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
       header
-      _scan(options)
 
-      @gem_patches.map(&:update)
-      locked = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile)).specs
-
-      gems_to_update = @gem_patches.map do |p|
-        old_version = locked.detect { |s| s.name == p.gem_name }.version.to_s
-        new_version = p.calc_new_version(old_version)
-        p "Attempting #{p.gem_name}: #{old_version} => #{new_version}" if ENV['DEBUG_PATCH_RESOLVER']
-        Gem::Specification.new(p.gem_name, new_version)
-      end
+      gems_to_update = AdvisoryConsolidator.new(options).patch_gemfile_and_get_gem_specs_to_patch
 
       if gems_to_update.empty?
         puts @no_vulns_message
@@ -78,10 +69,6 @@ module Bundler::Patch
       # TODO: review where the update key's value is used? Can't find it.
       options = {'update' => prep.unlock}
       Bundler::Installer.install(Bundler.root, prep.bundler_def, options)
-    end
-
-    def _scan(options)
-      @gem_patches = AdvisoryConsolidator.new(options).vulnerable_gems
     end
   end
 end

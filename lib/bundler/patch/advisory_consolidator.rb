@@ -25,6 +25,20 @@ module Bundler::Patch
       end.flatten
     end
 
+    def patch_gemfile_and_get_gem_specs_to_patch
+      gem_patches = vulnerable_gems
+      locked = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile)).specs
+
+      gem_patches.map(&:update) # modify requirements in Gemfile if necessary
+
+      gem_patches.map do |p|
+        old_version = locked.detect { |s| s.name == p.gem_name }.version.to_s
+        new_version = p.calc_new_version(old_version)
+        p "Attempting #{p.gem_name}: #{old_version} => #{new_version}" if ENV['DEBUG_PATCH_RESOLVER']
+        Gem::Specification.new(p.gem_name, new_version)
+      end
+    end
+
     private
 
     def consolidate_gemfiles(gemfiles)

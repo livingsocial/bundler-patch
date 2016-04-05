@@ -3,7 +3,7 @@ module Bundler::Patch
     attr_accessor :gems_to_update
 
     # pass-through options to ConservativeResolver
-    attr_accessor :strict, :minor_allowed
+    attr_accessor :strict, :minor_allowed, :patching
 
     # This copies way too much code, but for now is an acceptable step forward. Intervening into the creation
     # of a Definition instance is a bit of a pain, a lot of preliminary data has to be gathered first, and
@@ -35,6 +35,7 @@ module Bundler::Patch
           resolver.locked_specs = locked_specs
           resolver.strict = @strict
           resolver.minor_allowed = @minor_allowed
+          resolver.patching = @patching
           result = resolver.start(expanded_dependencies)
           spec_set = Bundler::SpecSet.new(result)
 
@@ -49,30 +50,43 @@ module Bundler::Patch
 
     def initialize(bundler_def, gems_to_update, options)
       @bundler_def = bundler_def
-      @gems_to_update = GemsToUpdate.new(gems_to_update)
+      @gems_to_update = GemsToUpdate.new(gems_to_update, options[:patching])
       @options = options
     end
 
     def prep
       @unlock = @gems_to_update.to_bundler_install_options
-      @bundler_def ||= Bundler.definition(unlock)
+      @bundler_def ||= Bundler.definition(@gems_to_update.to_bundler_definition)
       @bundler_def.extend ConservativeDefinition
       @bundler_def.gems_to_update = @gems_to_update
       @bundler_def.strict = @options[:strict]
       @bundler_def.minor_allowed = @options[:minor_allowed]
+      @bundler_def.patching = @options[:patching]
       @bundler_def
     end
   end
 
   class GemsToUpdate
-    # @param `true`, `[String]` or `[Gem::Dependency]` gems_to_update
-    def initialize(gems_to_update)
+    # @param `true`, [String] or [Gem::Dependency] gems_to_update
+    # @param [boolean] patching. Patching is special, we need to communicate 'true'
+    #                            into the innards of Bundler, but keep a list of
+    #                            gems we're patching handy for our Resolver. (TODO: or do we?)
+    def initialize(gems_to_update, patching)
       @gems_to_update = Array(gems_to_update)
+      @patching = patching
     end
 
     def to_bundler_install_options
-      gem_names = to_gem_names
-      {gems: (gem_names === true ? true : gem_names)}
+      # This may not be correct for bundler install
+      {gems: (gem_names_should_or_does_equal_true? ? true : to_gem_names)}
+    end
+
+    def to_bundler_definition
+      gem_names_should_or_does_equal_true? ? true : {gems: to_gem_names}
+    end
+
+    def gem_names_should_or_does_equal_true?
+      @patching || (to_gem_names === true)
     end
 
     def to_gem_names

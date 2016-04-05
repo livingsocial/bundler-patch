@@ -3,9 +3,11 @@ require_relative '../spec_helper'
 describe Scanner do
   before do
     @bf = BundlerFixture.new
+    ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
   end
 
   after do
+    ENV['BUNDLE_GEMFILE'] = nil
     @bf.clean_up
   end
 
@@ -13,74 +15,78 @@ describe Scanner do
     @bf.parsed_lockfile_spec(gem_name).version.to_s
   end
 
-  context 'security patching' do
-    before do
-      ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-    end
-
-    after do
-      ENV['BUNDLE_GEMFILE'] = nil
-    end
-
-    def add_fake_advisory(gem:, patched_versions:)
-      ad = Bundler::Advise::Advisory.new(gem: gem, patched_versions: patched_versions)
-      gem_dir = File.join(@bf.dir, 'gems', gem)
-      FileUtils.makedirs gem_dir
-      File.open(File.join(gem_dir, "#{gem}-patch.yml"), 'w') { |f| f.print ad.to_yaml }
-    end
-
-    it 'adds new dependent gem on security upgrade' do
+  # NOTE: doing complicated real life cases from within specs can still result
+  # in weird results inside Bundler. It can be a nice way to try and debug
+  # a real case, but make sure and keep double checking the same behavior is
+  # occurring outside of RSpec and this tmpdir setup, or you might drive u-self
+  # crayz. The following tests are nice and simple to at least exercise the
+  # basic mechanisms, but are not intended to be comprehensive.
+  context 'integration tests' do
+    it 'conservative update single' do
       Dir.chdir(@bf.dir) do
-        add_fake_advisory(gem: 'foo', patched_versions: ['~> 1.4, >= 1.4.5'])
-        add_fake_advisory(gem: 'nuu', patched_versions: ['~> 0.2, >= 0.2.2'])
-
-        PathedGemfileLockFixture.tap do |fix|
+        GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
-                     gems: {foo: nil, bar: '~> 1.2'},
-                     locks: {foo: '1.4.4', bar: '1.2.8'},
-                     sources: [fix.create_spec(:foo, '1.4.7', {wat: '>= 1.2.0'}),
-                               fix.create_spec(:wat, '1.2.3')])
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
         end
 
         Bundler.with_clean_env do
-          Scanner.new.patch(advisory_db_path: @bf.dir, skip_bundler_advise: true)
+          Scanner.new.update(gems_to_update: ['rack'])
         end
 
-        lockfile_spec_version('foo').should == '1.4.7' # upgraded because fake advisory
-        lockfile_spec_version('wat').should == '1.2.3' # foo upgrade brings new dependency
-
-        lockfile_spec_version('bar').should == '1.2.8' # stays put because nothing to change it
+        lockfile_spec_version('rack').should == '1.4.7'
+        lockfile_spec_version('addressable').should == '1.0.1'
       end
     end
 
-    it 'upgrades insecure gem only in lockfile with parent needing upgrade too' do
+    it 'conservative update all' do
       Dir.chdir(@bf.dir) do
-        add_fake_advisory(gem: 'nuu', patched_versions: ['~> 0.2, >= 0.2.2'])
-
-        # patched needs to be a minor upgrade in this case too
-        PathedGemfileLockFixture.tap do |fix|
+        GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
-                     gems: {tea: nil, baz: nil},
-                     locks: {tea: '3.2.0', nuu: '0.1.0', baz: '1.0.0'},
-                     sources: [fix.create_spec(:tea, '3.2.0', {nuu: '~> 0.1.0'}),
-                               fix.create_spec(:tea, '3.2.3', {nuu: '>= 0.2'}),
-                               fix.create_spec(:nuu, '0.2.2'),
-                               fix.create_spec(:baz, '1.0.0'),
-                               fix.create_specs(:baz, %w(1.0.1 1.1.0 2.0.0))])
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
         end
 
         Bundler.with_clean_env do
-          Scanner.new.patch(advisory_db_path: @bf.dir, skip_bundler_advise: true)
+          Scanner.new.update
         end
 
-        lockfile_spec_version('nuu').should == '0.2.2' # upgraded because fake advisory
-        lockfile_spec_version('tea').should == '3.2.3' # upgraded to keep compatible with nuu 0.2.2
-        lockfile_spec_version('baz').should == '1.0.0' # baz is not involved, should stay put
+        lockfile_spec_version('rack').should == '1.4.7'
+        lockfile_spec_version('addressable').should == '1.0.4'
+      end
+    end
 
-        # May need to also:
-        # What `patch` should do is a special conservative update of ALL gems that truly
-        # keeps everything at its current, a complete reverse of filter_specs, not a special
-        # sort - just a complete reverse.
+    it 'conservative update one, minor allowed' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '0.2.0', addressable: '1.0.1'})
+        end
+
+        Bundler.with_clean_env do
+          Scanner.new.update(minor_allowed: true, gems_to_update: ['rack'])
+        end
+
+        lockfile_spec_version('rack').should == '0.9.1'
+        lockfile_spec_version('addressable').should == '1.0.1'
+      end
+    end
+
+    it 'patches one' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+        end
+
+        Bundler.with_clean_env do
+          Scanner.new.patch(gems_to_update: ['rack'])
+        end
+
+        lockfile_spec_version('rack').should == '1.4.6'
+        lockfile_spec_version('addressable').should == '1.0.1'
       end
     end
   end

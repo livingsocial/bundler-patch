@@ -1,4 +1,5 @@
 module Bundler::Patch
+  # TODO - kill. Not using.
   class PatchAnalysis
     def initialize(lockfile=nil)
       @lockfile = lockfile || Bundler::LockfileParser.new(Bundler.read_file('Gemfile.lock'))

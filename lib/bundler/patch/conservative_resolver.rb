@@ -1,9 +1,11 @@
 module Bundler::Patch
   class ConservativeResolver < Bundler::Resolver
-    attr_accessor :locked_specs, :unlock, :unlocking_all, :strict, :minor_allowed
+    attr_accessor :locked_specs, :unlock, :unlocking_all, :strict, :minor_allowed, :patching
 
     def search_for(dependency)
       res = super(dependency)
+      # puts "super search_for #{dependency}: #{debug_format_result(res)}" if ENV['DEBUG_PATCH_RESOLVER']
+      # this is way too noisy ^^ prolly just kill it.
 
       dep = dependency.dep unless dependency.is_a? Gem::Dependency
       @conservative_search_for ||= {}
@@ -13,7 +15,8 @@ module Bundler::Patch
 
         # if we're unlocking, we need to look for a newer one first, but fallback
         # to current version.
-        unlocking_gem = (@unlocking_all || @unlock.include?(gem_name))
+        # TODO: do i still need @unlocking_all?
+        unlocking_gem = (@unlocking_all || @patching || @unlock.include?(gem_name))
 
         # an Array per version returned, different entries for different platforms.
         # We just need the version here so it's ok to hard code this to the first instance.
@@ -26,7 +29,7 @@ module Bundler::Patch
             # TODO: if we keep this, gotta go through Bundler.ui
             begin
               if res
-                a = [gem_name, res.map { |sg| [sg.version, sg.dependencies_for_activated_platforms.map { |dp| [dp.name, dp.requirement.to_s] }] }]
+                a = [gem_name, debug_format_result(res)]
                 p [a.first, a.last.map { |sg_data| [sg_data.first.version, sg_data.last.map { |aa| aa.join(' ') }] }]
               else
                 p "No res for #{gem_name}. Orig res: #{super(dependency)}"
@@ -37,6 +40,10 @@ module Bundler::Patch
           end
         end
       end
+    end
+
+    def debug_format_result(res)
+      res.map { |sg| [sg.version, sg.dependencies_for_activated_platforms.map { |dp| [dp.name, dp.requirement.to_s] }] }
     end
 
     def filter_specs(specs, unlocking_gem, locked_spec)
@@ -75,6 +82,11 @@ module Bundler::Patch
         when a_ver.segments[0] != b_ver.segments[0]
           b_ver <=> a_ver
         when !@minor_allowed && (a_ver.segments[1] != b_ver.segments[1])
+          b_ver <=> a_ver
+        when @patching
+          # TODO: there's no unit test for this case
+          # TODO: Explain this case. It works in conjunction with being fed Gem:Specs with patched_version as locked_version.
+          # a little too spooky action at a distance.
           b_ver <=> a_ver
         else
           a_ver <=> b_ver

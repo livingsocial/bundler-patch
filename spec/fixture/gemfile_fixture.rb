@@ -47,6 +47,10 @@ class GemfileLockFixture
   end
 end
 
+# Pathed cannot realistically fake remote sources, however, cuz too much special sauce in Bundler. It will
+# more enthusiastically unlock gems in pathed sources, and therefore won't replicate remote source behavior.
+# The only reason this exists was an attempt at that (seemed to be working well for a while but I was
+# fooling myself and I didn't believe it.)
 class PathedGemfileLockFixture < GemfileLockFixture
   def self.create(dir:, gems: {}, locks: nil, sources: [])
     self.new(dir: dir, gems: gems, locks: locks).tap do |fix|
@@ -59,14 +63,12 @@ class PathedGemfileLockFixture < GemfileLockFixture
 
   def create_gemfile
     lines = []
-    dir = File.join(@dir, 'pathed_gems')
-    lines << "path '#{dir}' do"
     @gems.each do |name, versions|
-      line = "  gem '#{name}'"
+      line = "gem '#{name}'"
       Array(versions).each { |version| line << ", '#{version}'" } if versions
+      line << ", :path => '#{da_gem_dir = gem_dir(create_spec(name, versions ? Array(versions).first : ''))}'"
       lines << line
     end
-    lines << 'end'
     write_lines(lines, 'Gemfile')
 
     File.join(@dir, 'Gemfile')
@@ -78,10 +80,11 @@ class PathedGemfileLockFixture < GemfileLockFixture
 
   def make_fake_gem(spec)
     name, version = [spec.name, spec.version]
-    gem_dir = File.join(@dir, 'pathed_gems')
-    FileUtils.makedirs(gem_dir)
+    FileUtils.makedirs(gem_dir(spec))
     deps = spec.dependencies.map do |dep|
-      "  s.add_dependency '#{dep.name}'".tap { |s| s << ", '#{dep.requirement}'" if dep.requirement }
+      "  s.add_dependency '#{dep.name}'".tap do |s|
+        s << ", #{dep.requirement.requirements.map { |op, v| "'#{op} #{v}'" }.join(', ')}" if dep.requirement
+      end
     end
 
     contents = <<-CONTENT
@@ -96,7 +99,13 @@ Gem::Specification.new do |s|
 end
     CONTENT
 
-    File.open(File.join(gem_dir, "#{name}-#{version}.gemspec"), 'w') { |f| f.print contents }
+    gemspec_fn = File.join(gem_dir(spec), "#{name}-#{version}.gemspec")
+    puts "Creating #{gemspec_fn}"
+    File.open(gemspec_fn, 'w') { |f| f.print contents }
+  end
+
+  def gem_dir(spec)
+    File.join(@dir, 'pathed_gems', spec.name.to_s, spec.version.to_s)
   end
 
   def create_spec(name, version, dependencies={})
@@ -109,7 +118,7 @@ end
       s.version = Gem::Version.new(version)
       s.platform = 'ruby'
       dependencies.each do |name, requirement|
-        s.add_dependency name, requirement
+        s.add_dependency name, requirement.split(',')
       end
     end
   end

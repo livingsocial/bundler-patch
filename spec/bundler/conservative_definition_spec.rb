@@ -30,7 +30,7 @@ describe Scanner do
 
     def test_conservative_update(gems_to_update, options, bundler_def)
       prep = DefinitionPrep.new(bundler_def, gems_to_update, options).tap { |p| p.prep }
-      prep.bundler_def.lock(File.join(Dir.pwd, 'Gemfile.lock'))
+      prep.bundler_def.tap { |bd| bd.lock(File.join(Dir.pwd, 'Gemfile.lock')) }
     end
 
     it 'when updated gem has same dep req' do
@@ -252,7 +252,18 @@ describe Scanner do
       end
     end
 
+    it 'fixes up empty remotes in rubygems_aggregator' do
+      # this test doesn't fail without the fixup code, but I already
+      # commented I don't know the underlying cause, so better than nothing.
+      setup_lockfile do
+        bundler_def = test_conservative_update(true, {strict: false}, nil)
+        sources = bundler_def.send(:sources)
+        sources.rubygems_remotes.length.should_not == 0
+      end
+    end
+
     it 'the caching caused the not-a-conflict job_board json conflict'
+    # needed to get back to this - maybe this was actually the missing remotes problem?
 
     it 'needs to pass-through all install or update bundler options'
     # re-designing this as a bundler plugin as the thang here

@@ -90,6 +90,28 @@ describe Scanner do
                              unlocking, locked('foo', '1.7.9'))
         versions(res).should == %w(2.0.0 1.8.0 1.7.9)
       end
+
+      # patching (ab)uses overriding the locked_spec to push up gems needing patching, and otherwise
+      # we don't want to jump up higher than what's needed, because the goal is not an overall jump
+      # to latest release/minor, but to 'just get patched' and get on with it.
+      #
+      # TODO: that attitude ^^ is debatable. Patch plus latest release/minor could also be desired.
+      it 'when unlocking and when patching order is strictly oldest to newest' do
+        @cr.patching = true
+        versions = %w(1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0 3.1.1 3.2.0)
+        res = @cr.sort_specs(create_specs('foo', versions),
+                             unlocking, locked('foo', '1.7.5'))
+        versions(res).should == versions.reverse
+      end
+
+      # see prior spec comment explaining why the `unlocking_gem` value here makes no difference in patching cases.
+      it 'when not unlocking and when patching order is also strictly oldest to newest' do
+        @cr.patching = true
+        versions = %w(1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0 3.1.1 3.2.0)
+        res = @cr.sort_specs(create_specs('foo', versions),
+                             keep_locked, locked('foo', '1.7.5'))
+        versions(res).should == versions.reverse
+      end
     end
 
     context 'sort specs (not strict) (minor allowed)' do

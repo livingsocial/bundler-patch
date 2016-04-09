@@ -34,8 +34,14 @@ module Bundler::Patch
       gem_patches.map do |p|
         old_version = locked.detect { |s| s.name == p.gem_name }.version.to_s
         new_version = p.calc_new_version(old_version)
-        p "Attempting #{p.gem_name}: #{old_version} => #{new_version}" if ENV['DEBUG_PATCH_RESOLVER']
-        Gem::Specification.new(p.gem_name, new_version)
+        if new_version
+          puts "Attempting #{p.gem_name}: #{old_version} => #{new_version}" # TODO: Bundler.ui
+          Gem::Specification.new(p.gem_name, new_version)
+        else
+          {gem_name: p.gem_name, old_version: old_version, patched_versions: p.patched_versions}
+        end
+      end.partition do |obj|
+        obj.is_a?(Gem::Specification)
       end
     end
 

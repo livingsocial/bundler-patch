@@ -4,8 +4,6 @@ module Bundler::Patch
 
     def search_for(dependency)
       res = super(dependency)
-      # puts "super search_for #{dependency}: #{debug_format_result(res)}" if ENV['DEBUG_PATCH_RESOLVER']
-      # this is way too noisy ^^ prolly just kill it.
 
       dep = dependency.dep unless dependency.is_a? Gem::Dependency
       @conservative_search_for ||= {}
@@ -29,8 +27,7 @@ module Bundler::Patch
             # TODO: if we keep this, gotta go through Bundler.ui
             begin
               if res
-                a = [gem_name, debug_format_result(res)]
-                p [a.first, a.last.map { |sg_data| [sg_data.first.version, sg_data.last.map { |aa| aa.join(' ') }] }]
+                p debug_format_result(gem_name, res)
               else
                 p "No res for #{gem_name}. Orig res: #{super(dependency)}"
               end
@@ -42,8 +39,10 @@ module Bundler::Patch
       end
     end
 
-    def debug_format_result(res)
-      res.map { |sg| [sg.version, sg.dependencies_for_activated_platforms.map { |dp| [dp.name, dp.requirement.to_s] }] }
+    def debug_format_result(gem_name, res)
+      a = [gem_name,
+           res.map { |sg| [sg.version, sg.dependencies_for_activated_platforms.map { |dp| [dp.name, dp.requirement.to_s] }] }]
+      [a.first, a.last.map { |sg_data| [sg_data.first.version, sg_data.last.map { |aa| aa.join(' ') }] }]
     end
 
     def filter_specs(specs, unlocking_gem, locked_spec)
@@ -84,7 +83,6 @@ module Bundler::Patch
         when !@minor_allowed && (a_ver.segments[1] != b_ver.segments[1])
           b_ver <=> a_ver
         when @patching
-          # TODO: there's no unit test for this case
           # TODO: Explain this case. It works in conjunction with being fed Gem:Specs with patched_version as locked_version.
           # a little too spooky action at a distance.
           b_ver <=> a_ver

@@ -82,6 +82,8 @@ There's no option to allow major version upgrades as this is the default behavio
 
 ### Troubleshooting
 
+First tip: make sure the current `bundle` command runs to completion on its own without any problems.
+
 The most frequent problems with this tool involve expectations around what gems should or shouldn't be upgraded. This
 can quickly get complicated as even a small dependency tree can involve many moving parts, and Bundler works hard to
 find a combination that satisfies all of the dependencies and requirements.
@@ -99,6 +101,8 @@ expect.
 
 `bundler-patch` can dump its own debug output, potentially helpful, with `DEBUG_PATCH_RESOLVER`.
 
+To get additional Bundler debugging output, enable the `DEBUG` env variable. This will include all of the details of
+the downloading the full dependency data from remote sources.
 
 
 ## Development

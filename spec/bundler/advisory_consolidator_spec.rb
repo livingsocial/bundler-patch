@@ -46,17 +46,20 @@ describe Scanner do
       end
     end
 
-    it 'should accurately find new version for advisories' do
+    it 'should cope with a disallowed major version increment appropriately' do
       Dir.chdir(@bf.dir) do
         add_fake_advisory(gem: 'foo', patched_versions: ['>= 3.2.0'])
 
         GemfileLockFixture.create(dir: @bf.dir, gems: {foo: '2.2.8'})
 
         ac = AdvisoryConsolidator.new({}, all_ads)
-        gems_to_update = ac.patch_gemfile_and_get_gem_specs_to_patch
-        gems_to_update.length.should == 1
-        spec = gems_to_update.first
-        spec.version.should == Gem::Version.new('3.2.0')
+        gems_to_update, warnings = ac.patch_gemfile_and_get_gem_specs_to_patch
+        gems_to_update.length.should == 0
+        warnings.length.should == 1
+        h = warnings.first
+        h[:gem_name].should == 'foo'
+        h[:old_version].should == '2.2.8'
+        h[:patched_versions].should == ['3.2.0']
       end
     end
   end

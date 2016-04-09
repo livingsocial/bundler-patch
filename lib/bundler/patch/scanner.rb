@@ -32,7 +32,16 @@ module Bundler::Patch
     def patch(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
       header
 
-      gems_to_update = AdvisoryConsolidator.new(options).patch_gemfile_and_get_gem_specs_to_patch
+      gems_to_update, warnings = AdvisoryConsolidator.new(options).patch_gemfile_and_get_gem_specs_to_patch
+
+      unless warnings.empty?
+        warnings.each do |hash|
+          # TODO: Bundler.ui
+          puts "* Could not attempt upgrade for #{hash[:gem_name]} from #{hash[:old_version]} to any patched versions " \
+            + "#{hash[:patched_versions].join(', ')}. Most often this is because a major version increment would be " \
+            + "required and it's safer for a major version increase to be done manually."
+        end
+      end
 
       if gems_to_update.empty?
         puts @no_vulns_message

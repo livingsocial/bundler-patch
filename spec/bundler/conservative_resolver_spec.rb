@@ -34,6 +34,7 @@ describe Scanner do
 
     before do
       @cr = ConservativeResolver.new(nil, nil, [])
+      @cr.gems_to_update = GemsToUpdate.new(nil, {})
     end
 
     # Rightmost (highest array index) in result is most preferred.
@@ -97,7 +98,7 @@ describe Scanner do
       #
       # TODO: that attitude ^^ is debatable. Patch plus latest release/minor could also be desired.
       it 'when unlocking and when patching order is strictly oldest to newest' do
-        @cr.patching = true
+        @cr.gems_to_update = GemsToUpdate.new(nil, {patching: true})
         versions = %w(1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0 3.1.1 3.2.0)
         res = @cr.sort_specs(create_specs('foo', versions),
                              unlocking, locked('foo', '1.7.5'))
@@ -106,7 +107,7 @@ describe Scanner do
 
       # see prior spec comment explaining why the `unlocking_gem` value here makes no difference in patching cases.
       it 'when not unlocking and when patching order is also strictly oldest to newest' do
-        @cr.patching = true
+        @cr.gems_to_update = GemsToUpdate.new(nil, {patching: true})
         versions = %w(1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0 3.1.1 3.2.0)
         res = @cr.sort_specs(create_specs('foo', versions),
                              keep_locked, locked('foo', '1.7.5'))
@@ -120,6 +121,13 @@ describe Scanner do
         res = @cr.sort_specs(create_specs('foo', %w(2.4.0 2.4.1 2.5.0)),
                              unlocking, locked('foo', '2.4.0'))
         versions(res).should == %w(2.4.0 2.4.1 2.5.0)
+      end
+
+      it 'larger case' do
+        @cr.minor_allowed = true
+        res = @cr.sort_specs(create_specs('foo', %w(0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1)),
+                             unlocking, locked('foo', '0.2.0'))
+        versions(res).should == %w(2.0.0 2.0.1 1.0.0 0.2.0 0.3.0 0.3.1 0.9.0)
       end
     end
   end

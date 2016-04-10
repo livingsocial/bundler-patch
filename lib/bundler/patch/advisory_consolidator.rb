@@ -26,23 +26,21 @@ module Bundler::Patch
     end
 
     def patch_gemfile_and_get_gem_specs_to_patch
-      gem_patches = vulnerable_gems
+      gem_update_specs = vulnerable_gems
       locked = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile)).specs
 
-      gem_patches.map(&:update) # modify requirements in Gemfile if necessary
+      gem_update_specs.map(&:update) # modify requirements in Gemfile if necessary
 
-      gem_patches.map do |p|
-        old_version = locked.detect { |s| s.name == p.gem_name }.version.to_s
-        new_version = p.calc_new_version(old_version)
+      gem_update_specs.map do |up_spec|
+        old_version = locked.detect { |s| s.name == up_spec.gem_name }.version.to_s
+        new_version = up_spec.calc_new_version(old_version)
         if new_version
-          puts "Attempting #{p.gem_name}: #{old_version} => #{new_version}" # TODO: Bundler.ui
-          Gem::Specification.new(p.gem_name, new_version)
+          GemPatch.new(gem_name: up_spec.gem_name, old_version: old_version,
+                       new_version: new_version, patched_versions: up_spec.patched_versions)
         else
-          {gem_name: p.gem_name, old_version: old_version, patched_versions: p.patched_versions}
+          GemPatch.new(gem_name: up_spec.gem_name, old_version: old_version, patched_versions: up_spec.patched_versions)
         end
-      end.partition do |obj|
-        obj.is_a?(Gem::Specification)
-      end
+      end.partition { |gp| !gp.new_version.nil? }
     end
 
     private
@@ -59,6 +57,17 @@ module Bundler::Patch
         all.sort.last
       end
       Gemfile.new(gem_name: all_gem_names.first, patched_versions: highest_minor_patched)
+    end
+  end
+
+  class GemPatch
+    attr_reader :gem_name, :old_version, :new_version, :patched_versions
+
+    def initialize(gem_name:, old_version: nil, new_version: nil, patched_versions: nil)
+      @gem_name = gem_name
+      @old_version = old_version
+      @new_version = new_version
+      @patched_versions = patched_versions
     end
   end
 end

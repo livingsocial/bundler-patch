@@ -29,7 +29,11 @@ describe Scanner do
     end
 
     def test_conservative_update(gems_to_update, options, bundler_def)
-      prep = DefinitionPrep.new(bundler_def, gems_to_update, options).tap { |p| p.prep }
+      gem_patches = Array(gems_to_update).map do |gem_name|
+        gem_name.is_a?(String) ? GemPatch.new(gem_name: gem_name) : gem_name
+      end
+      options.merge!(updating: true) unless options[:updating] unless options[:patching]
+      prep = DefinitionPrep.new(bundler_def, gem_patches, options).tap { |p| p.prep }
       prep.bundler_def.tap { |bd| bd.lock(File.join(Dir.pwd, 'Gemfile.lock')) }
     end
 
@@ -132,7 +136,7 @@ describe Scanner do
             @bf.create_spec('bar', '3.2.0'),
             @bf.create_spec('quux', '0.2.0'),
           ], ensure_sources: false, update_gems: true)
-        test_conservative_update(true, {strict: true, minor_allowed: true}, bundler_def)
+        test_conservative_update([], {strict: true, minor_allowed: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.4'
         lockfile_spec_version('foo').should == '2.5.0'
@@ -149,7 +153,7 @@ describe Scanner do
             @bf.create_spec('bar', '1.1.3'),
             @bf.create_spec('quux', '0.0.4'),
           ], ensure_sources: false, update_gems: true)
-        test_conservative_update(true, {strict: true, minor_allowed: true}, bundler_def)
+        test_conservative_update([], {strict: true, minor_allowed: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.3'
         lockfile_spec_version('foo').should == '2.4.0'
@@ -181,13 +185,13 @@ describe Scanner do
 
       it 'does not explode when strict' do
         with_bundler_setup do
-          test_conservative_update(true, {strict: true}, @bundler_def)
+          test_conservative_update([], {strict: true}, @bundler_def)
         end
       end
 
       it 'does not explode when not strict' do
         with_bundler_setup do
-          test_conservative_update(true, {strict: false}, @bundler_def)
+          test_conservative_update([], {strict: false}, @bundler_def)
         end
       end
     end
@@ -230,9 +234,9 @@ describe Scanner do
       end
     end
 
-    it 'passing gem dependencies as gems_to_update can force a gem to a specific version' do
+    it 'passing new_version in gems_to_update when patching can force a gem to a specific version' do
       setup_lockfile do
-        gems_to_update = ['foo', @bf.create_spec('quux', '2.4.0')]
+        gems_to_update = [GemPatch.new(gem_name: 'foo'), GemPatch.new(gem_name: 'quux', new_version: '2.4.0')]
         bundler_def = @bf.create_definition(
           gem_dependencies: [@bf.create_dependency('foo'), @bf.create_dependency('quux')],
           source_specs: [
@@ -241,10 +245,11 @@ describe Scanner do
             @bf.create_spec('bar', '1.1.2'),
             @bf.create_spec('bar', '1.1.3'),
             @bf.create_spec('bar', '3.2.0'),
+            @bf.create_spec('quux', '0.0.4'),
             @bf.create_spec('quux', '0.2.0'),
             @bf.create_spec('quux', '2.4.0'),
           ], ensure_sources: false, update_gems: %w(foo quux))
-        test_conservative_update(gems_to_update, {strict: true, minor_allowed: true}, bundler_def)
+        test_conservative_update(gems_to_update, {strict: false, minor_allowed: true, patching: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.3'
         lockfile_spec_version('foo').should == '2.5.0'
@@ -256,7 +261,7 @@ describe Scanner do
       # this test doesn't fail without the fixup code, but I already
       # commented I don't know the underlying cause, so better than nothing.
       setup_lockfile do
-        bundler_def = test_conservative_update(true, {strict: false}, nil)
+        bundler_def = test_conservative_update([], {strict: false}, nil)
         sources = bundler_def.send(:sources)
         sources.rubygems_remotes.length.should_not == 0
       end

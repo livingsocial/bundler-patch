@@ -1,5 +1,15 @@
 require_relative '../spec_helper'
 
+class BundlerFixture
+  def gemfile_filename
+    File.join(@dir, 'Gemfile')
+  end
+
+  def gemfile_contents
+    File.read(gemfile_filename)
+  end
+end
+
 describe Scanner do
   before do
     @bf = BundlerFixture.new
@@ -33,6 +43,7 @@ describe Scanner do
         Bundler.with_clean_env do
           system 'bundle install --path zz'
 
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           ENV['DEBUG_PATCH_RESOLVER'] = '1'
           ENV['DEBUG_RESOLVER'] = '1'
           Scanner.new.patch
@@ -51,6 +62,7 @@ describe Scanner do
         end
 
         Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           Scanner.new.update(gems_to_update: ['rack'])
         end
 
@@ -68,6 +80,7 @@ describe Scanner do
         end
 
         Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           Scanner.new.update
         end
 
@@ -85,6 +98,7 @@ describe Scanner do
         end
 
         Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           Scanner.new.update(minor_allowed: true, gems_to_update: ['rack'])
         end
 
@@ -102,7 +116,8 @@ describe Scanner do
         end
 
         Bundler.with_clean_env do
-          Scanner.new.patch(gems_to_update: ['rack'])
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          Scanner.new.patch
         end
 
         lockfile_spec_version('rack').should == '1.4.6'
@@ -110,12 +125,29 @@ describe Scanner do
       end
     end
 
-    it 'patches rails 3_2 but not mail' do
+    # this is an expensive test, prolly need to delete
+    xit 'patches rails 3_2 but not mail' do
       # mail cannot be patched with rails 3.2.x, and the clever hack of changing the locked_spec
       # for a patching gem, gets in the way here, because all other patches fail for the mail case
       # that we just have to live with anyway.
 
-      ''.should == 'This test is not written yet'
+      #@do_not_cleanup = true
+      Dir.chdir(@bf.dir) do
+        fix = GemfileLockFixture.new(dir: @bf.dir, gems: {'actionpack': '3.2.22',
+                                                          'actionmailer': '~> 3.2.22'})
+        fix.create_gemfile
+
+        Bundler.with_clean_env do
+          #ENV['DEBUG_PATCH_RESOLVER'] = '1'
+          ENV['DEBUG'] = '1'
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          system 'bundle install --path zz'
+          Scanner.new.patch
+        end
+
+        lockfile_spec_version('mail').should == '2.5.4'
+        lockfile_spec_version('actionpack').should == '3.2.22.2'
+      end
     end
   end
 end

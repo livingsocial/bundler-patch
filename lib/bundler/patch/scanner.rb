@@ -20,7 +20,9 @@ module Bundler::Patch
         puts # extra line to separate from advisory db update text
         puts 'Detected vulnerabilities:'
         puts '-------------------------'
-        puts gem_patches.map(&:to_s).uniq.sort.join("\n")
+        gem_patches.each do |gp|
+          puts "Need to update #{gp.gem_name}: #{gp.old_version} => #{gp.new_version}" # TODO: Bundler.ui
+        end
       end
     end
 
@@ -32,22 +34,26 @@ module Bundler::Patch
     def patch(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
       header
 
-      gems_to_update, warnings = AdvisoryConsolidator.new(options).patch_gemfile_and_get_gem_specs_to_patch
+      gem_patches, warnings = AdvisoryConsolidator.new(options).patch_gemfile_and_get_gem_specs_to_patch
 
       unless warnings.empty?
-        warnings.each do |hash|
+        warnings.each do |gp|
           # TODO: Bundler.ui
-          puts "* Could not attempt upgrade for #{hash[:gem_name]} from #{hash[:old_version]} to any patched versions " \
-            + "#{hash[:patched_versions].join(', ')}. Most often this is because a major version increment would be " \
+          puts "* Could not attempt upgrade for #{gp.gem_name} from #{gp.old_version} to any patched versions " \
+            + "#{gp.patched_versions.join(', ')}. Most often this is because a major version increment would be " \
             + "required and it's safer for a major version increase to be done manually."
         end
       end
 
-      if gems_to_update.empty?
+      if gem_patches.empty?
         puts @no_vulns_message
       else
-        puts "Updating '#{gems_to_update.map(&:name).join(' ')}' to address vulnerabilities"
-        conservative_update(gems_to_update, options.merge(patching: true))
+        gem_patches.each do |gp|
+          puts "Attempting #{gp.gem_name}: #{gp.old_version} => #{gp.new_version}" # TODO: Bundler.ui
+        end
+
+        puts "Updating '#{gem_patches.map(&:gem_name).join(' ')}' to address vulnerabilities"
+        conservative_update(gem_patches, options.merge(patching: true))
       end
     end
 
@@ -60,8 +66,8 @@ module Bundler::Patch
 
     def update(options={}) # TODO: Revamp the commands now that we've broadened into security specific and generic
       header
-      gems_to_update = options[:gems_to_update] || true
-      conservative_update(gems_to_update, options)
+      gem_patches = (options.delete(:gems_to_update) || []).map { |gem_name| GemPatch.new(gem_name: gem_name) }
+      conservative_update(gem_patches, options.merge(updating: true))
     end
 
     private
@@ -70,10 +76,10 @@ module Bundler::Patch
       puts "Bundler Patch Version #{Bundler::Patch::VERSION}"
     end
 
-    def conservative_update(gems_to_update, options={}, bundler_def=nil)
+    def conservative_update(gem_patches, options={}, bundler_def=nil)
       Bundler.ui = Bundler::UI::Shell.new
 
-      prep = DefinitionPrep.new(bundler_def, gems_to_update, options).tap { |p| p.prep }
+      prep = DefinitionPrep.new(bundler_def, gem_patches, options).tap { |p| p.prep }
 
       # TODO: review where the update key's value is used? Can't find it.
       options = {'update' => prep.unlock}

@@ -56,10 +56,10 @@ describe Scanner do
         gems_to_update, warnings = ac.patch_gemfile_and_get_gem_specs_to_patch
         gems_to_update.length.should == 0
         warnings.length.should == 1
-        h = warnings.first
-        h[:gem_name].should == 'foo'
-        h[:old_version].should == '2.2.8'
-        h[:patched_versions].should == ['3.2.0']
+        gp = warnings.first
+        gp.gem_name.should == 'foo'
+        gp.old_version.should == '2.2.8'
+        gp.patched_versions.should == ['3.2.0']
       end
     end
   end

@@ -3,7 +3,7 @@ module Bundler::Patch
     attr_accessor :gems_to_update
 
     # pass-through options to ConservativeResolver
-    attr_accessor :strict, :minor_allowed, :patching
+    attr_accessor :strict, :minor_allowed
 
     # This copies way too much code, but for now is an acceptable step forward. Intervening into the creation
     # of a Definition instance is a bit of a pain, a lot of preliminary data has to be gathered first, and
@@ -23,19 +23,15 @@ module Bundler::Patch
                            # with no lockfile OR lockfile but update them all. In our case,
                            # we need to know the locked versions for conservative comparison.
                            locked = Bundler::LockfileParser.new(@lockfile_contents)
-                           resolver.unlocking_all = true
                            Bundler::SpecSet.new(locked.specs)
                          else
-                           resolver.unlocking_all = false
                            @locked_specs
                          end
 
-          @gems_to_update.fixup_locked_specs(locked_specs)
-          resolver.unlock = @gems_to_update.to_gem_names
+          resolver.gems_to_update = @gems_to_update
           resolver.locked_specs = locked_specs
           resolver.strict = @strict
           resolver.minor_allowed = @minor_allowed
-          resolver.patching = @patching
           result = resolver.start(expanded_dependencies)
           spec_set = Bundler::SpecSet.new(result)
 
@@ -48,9 +44,9 @@ module Bundler::Patch
   class DefinitionPrep
     attr_reader :unlock, :bundler_def
 
-    def initialize(bundler_def, gems_to_update, options)
+    def initialize(bundler_def, gem_patches, options)
       @bundler_def = bundler_def
-      @gems_to_update = GemsToUpdate.new(gems_to_update, options[:patching])
+      @gems_to_update = GemsToUpdate.new(gem_patches, options)
       @options = options
     end
 
@@ -61,7 +57,6 @@ module Bundler::Patch
       @bundler_def.gems_to_update = @gems_to_update
       @bundler_def.strict = @options[:strict]
       @bundler_def.minor_allowed = @options[:minor_allowed]
-      @bundler_def.patching = @options[:patching]
       fixup_empty_remotes if @gems_to_update.to_bundler_definition === true
       @bundler_def
     end
@@ -90,42 +85,50 @@ module Bundler::Patch
   end
 
   class GemsToUpdate
-    # @param `true`, [String] or [Gem::Dependency] gems_to_update
-    # @param [boolean] patching. Patching is special, we need to communicate 'true'
-    #                            into the innards of Bundler, but keep a list of
-    #                            gems we're patching handy for our Resolver. (TODO: or do we?)
-    def initialize(gems_to_update, patching)
-      @gems_to_update = Array(gems_to_update)
-      @patching = patching
+    attr_reader :gem_patches, :patching, :updating
+
+    def initialize(gem_patches, options)
+      @gem_patches = Array(gem_patches)
+      @patching = options[:patching]
+      @updating = options[:updating]      # TODO: unnecessary
+      raise 'Cannot be patching _and_ updating' if @patching && @updating
     end
 
     def to_bundler_install_options
-      # This may not be correct for bundler install
-      {gems: (gem_names_should_or_does_equal_true? ? true : to_gem_names)}
+      # TODO: This may not be correct for bundler install
+      {gems: (gem_names_should_equal_true? ? true : to_gem_names)}
     end
 
     def to_bundler_definition
-      gem_names_should_or_does_equal_true? ? true : {gems: to_gem_names}
+      gem_names_should_equal_true? ? true : {gems: to_gem_names}
     end
 
-    def gem_names_should_or_does_equal_true?
-      @patching || (@gems_to_update === [true])
+    def gem_names_should_equal_true?
+      unlocking_all?
     end
 
     def to_gem_names
-      if @gems_to_update.first.respond_to?(:name)
-        @gems_to_update.map(&:name)
-      else
-        @gems_to_update
-      end
+      @gem_patches.map(&:gem_name)
     end
 
-    def fixup_locked_specs(locked_specs)
-      @gems_to_update.each do |up_spec|
-        next unless up_spec.respond_to?(:name)
-        to_fix = locked_specs[up_spec.name]
-        to_fix.first.instance_variable_set('@version', up_spec.version)
-      end
+    def patching_gem?(gem_name)
+      @patching && to_gem_names.include?(gem_name)
+    end
+
+    def patching_but_not_this_gem?(gem_name)
+      @patching && !to_gem_names.include?(gem_name)
+    end
+
+    def gem_patch_for(gem_name)
+      @gem_patches.detect { |gp| gp.gem_name == gem_name }
+    end
+
+    def unlocking_all?
+      @patching || @gem_patches.empty?
+    end
+
+    def unlocking_gem?(gem_name)
+      unlocking_all? || to_gem_names.include?(gem_name)
     end
   end
 end

@@ -148,7 +148,7 @@ describe Scanner do
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           res = with_captured_stdout do
-            Scanner.new.scan
+            Scanner.new.patch(list: true)
           end
         end
 

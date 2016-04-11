@@ -20,9 +20,7 @@ module Bundler::Patch
         puts # extra line to separate from advisory db update text
         puts 'Detected vulnerabilities:'
         puts '-------------------------'
-        gem_patches.each do |gp|
-          puts "Need to update #{gp.gem_name}: #{gp.old_version} => #{gp.new_version}" # TODO: Bundler.ui
-        end
+        puts gem_patches.map(&:to_s).uniq.sort.join("\n")
       end
     end
 

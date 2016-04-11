@@ -124,5 +124,37 @@ describe Scanner do
         lockfile_spec_version('addressable').should == '1.0.1'
       end
     end
+
+    def with_captured_stdout
+      begin
+        old_stdout = $stdout
+        $stdout = StringIO.new('', 'w')
+        yield
+        $stdout.string
+      ensure
+        $stdout = old_stdout
+      end
+    end
+
+    it 'lists vulnerable gems' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+        end
+
+        res = nil
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          res = with_captured_stdout do
+            Scanner.new.scan
+          end
+        end
+
+        res.should =~ /Detected vulnerabilities/
+        res.should =~ /#{Regexp.escape('rack ["1.6.2", "1.5.4", "1.4.6", "1.1.6", "1.2.8", "1.3.9"]')}/
+      end
+    end
   end
 end

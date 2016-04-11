@@ -10,15 +10,14 @@ module Bundler::Patch
       #@conservative_search_for[dep] ||= # TODO turning off caching allowed a real-world sample to work, dunno why yet.
       begin
         gem_name = dep.name
-        unlocking_gem = @gems_to_update.unlocking_gem?(gem_name)
 
         # An Array per version returned, different entries for different platforms.
         # We just need the version here so it's ok to hard code this to the first instance.
         locked_spec = @locked_specs[gem_name].first
 
         (@strict ?
-          filter_specs(res, unlocking_gem, locked_spec) :
-          sort_specs(res, unlocking_gem, locked_spec)).tap do |res|
+          filter_specs(res, locked_spec) :
+          sort_specs(res, locked_spec)).tap do |res|
           if ENV['DEBUG_PATCH_RESOLVER']
             # TODO: if we keep this, gotta go through Bundler.ui
             begin
@@ -41,7 +40,7 @@ module Bundler::Patch
       [a.first, a.last.map { |sg_data| [sg_data.first.version, sg_data.last.map { |aa| aa.join(' ') }] }]
     end
 
-    def filter_specs(specs, unlocking_gem, locked_spec)
+    def filter_specs(specs, locked_spec)
       res = specs.select do |sg|
         # SpecGroup is grouped by name/version, multiple entries for multiple platforms.
         # We only need the name, which will be the same, so hard coding to first is ok.
@@ -60,10 +59,10 @@ module Bundler::Patch
         end
       end
 
-      sort_specs(res, unlocking_gem, locked_spec)
+      sort_specs(res, locked_spec)
     end
 
-    def sort_specs(specs, unlocking_gem, locked_spec)
+    def sort_specs(specs, locked_spec)
       return specs unless locked_spec
       gem_name = locked_spec.name
       locked_version = locked_spec.version
@@ -84,11 +83,11 @@ module Bundler::Patch
           a_ver <=> b_ver
         end
       end.tap do |result|
-        if unlocking_gem
+        if @gems_to_update.unlocking_gem?(gem_name)
           if @gems_to_update.patching_gem?(gem_name)
             # this logic will keep a gem from updating past the patched version
             # if a more recent release (or minor, if enabled) version exists.
-            # not sure if we want this special logic to remain or not.
+            # TODO: not sure if we want this special logic to remain or not.
             new_version = @gems_to_update.gem_patch_for(gem_name).new_version
             swap_version_to_end(specs, new_version, result) if new_version
           end

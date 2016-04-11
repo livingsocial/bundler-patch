@@ -1,11 +1,13 @@
 require_relative '../spec_helper'
 
-describe Scanner do
+describe ConservativeDefinition do
   before do
     @bf = BundlerFixture.new
+    ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
   end
 
   after do
+    ENV['BUNDLE_GEMFILE'] = nil
     @bf.clean_up
   end
 
@@ -260,6 +262,8 @@ describe Scanner do
     it 'fixes up empty remotes in rubygems_aggregator' do
       # this test doesn't fail without the fixup code, but I already
       # commented I don't know the underlying cause, so better than nothing.
+      gemfile = File.join(@bf.dir, 'Gemfile')
+      File.open(gemfile, 'w') { |f| f.puts "source 'https://rubygems.org'" }
       setup_lockfile do
         bundler_def = test_conservative_update([], {strict: false}, nil)
         sources = bundler_def.send(:sources)

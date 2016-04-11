@@ -5,9 +5,9 @@ module Bundler::Patch
     # pass-through options to ConservativeResolver
     attr_accessor :strict, :minor_allowed
 
-    # This copies way too much code, but for now is an acceptable step forward. Intervening into the creation
-    # of a Definition instance is a bit of a pain, a lot of preliminary data has to be gathered first, and
-    # copying this one method, avoids copying much of that code. Pick your poison.
+    # This copies more code than I'd like out of Bundler::Definition, but for now seems the least invasive way in.
+    # Backing up and intervening into the creation of a Definition instance itself involves a lot more code, a lot
+    # more preliminary data has to be gathered first.
     def resolve
       @resolve ||= begin
         last_resolve = converge_locked_specs
@@ -42,7 +42,7 @@ module Bundler::Patch
   end
 
   class DefinitionPrep
-    attr_reader :unlock, :bundler_def
+    attr_reader :bundler_def
 
     def initialize(bundler_def, gem_patches, options)
       @bundler_def = bundler_def
@@ -51,7 +51,6 @@ module Bundler::Patch
     end
 
     def prep
-      @unlock = @gems_to_update.to_bundler_install_options
       @bundler_def ||= Bundler.definition(@gems_to_update.to_bundler_definition)
       @bundler_def.extend ConservativeDefinition
       @bundler_def.gems_to_update = @gems_to_update
@@ -85,26 +84,15 @@ module Bundler::Patch
   end
 
   class GemsToUpdate
-    attr_reader :gem_patches, :patching, :updating
+    attr_reader :gem_patches, :patching
 
-    def initialize(gem_patches, options)
+    def initialize(gem_patches, options={})
       @gem_patches = Array(gem_patches)
       @patching = options[:patching]
-      @updating = options[:updating]      # TODO: unnecessary
-      raise 'Cannot be patching _and_ updating' if @patching && @updating
-    end
-
-    def to_bundler_install_options
-      # TODO: This may not be correct for bundler install
-      {gems: (gem_names_should_equal_true? ? true : to_gem_names)}
     end
 
     def to_bundler_definition
-      gem_names_should_equal_true? ? true : {gems: to_gem_names}
-    end
-
-    def gem_names_should_equal_true?
-      unlocking_all?
+      unlocking_all? ? true : {gems: to_gem_names}
     end
 
     def to_gem_names

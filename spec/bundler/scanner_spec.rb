@@ -124,30 +124,5 @@ describe Scanner do
         lockfile_spec_version('addressable').should == '1.0.1'
       end
     end
-
-    # this is an expensive test, prolly need to delete
-    xit 'patches rails 3_2 but not mail' do
-      # mail cannot be patched with rails 3.2.x, and the clever hack of changing the locked_spec
-      # for a patching gem, gets in the way here, because all other patches fail for the mail case
-      # that we just have to live with anyway.
-
-      #@do_not_cleanup = true
-      Dir.chdir(@bf.dir) do
-        fix = GemfileLockFixture.new(dir: @bf.dir, gems: {'actionpack': '3.2.22',
-                                                          'actionmailer': '~> 3.2.22'})
-        fix.create_gemfile
-
-        Bundler.with_clean_env do
-          #ENV['DEBUG_PATCH_RESOLVER'] = '1'
-          ENV['DEBUG'] = '1'
-          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          system 'bundle install --path zz'
-          Scanner.new.patch
-        end
-
-        lockfile_spec_version('mail').should == '2.5.4'
-        lockfile_spec_version('actionpack').should == '3.2.22.2'
-      end
-    end
   end
 end

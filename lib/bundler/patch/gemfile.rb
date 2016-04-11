@@ -8,7 +8,6 @@ module Bundler::Patch
       super(target_file: 'Gemfile',
             target_dir: target_dir,
             patched_versions: patched_versions)
-      # TODO: support Gem::Requirement in patched_versions
       @gem_name = gem_name
     end
 

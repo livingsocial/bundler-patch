@@ -40,7 +40,6 @@ describe Gemfile do
         gem_fixture_create(@tmpdir, {rails: '3.2.2', 'jquery-rails': '3.1.3'}) do
           s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'rails', patched_versions: ['3.2.22.2'])
           s.update
-          # TODO: consider 'fixing' to "gem 'foo', '>= 1.2.4'"
           File.read('Gemfile').should have_line("gem 'rails', '3.2.22.2'")
           File.read('Gemfile').should have_line("gem 'jquery-rails', '3.1.3'")
         end
@@ -197,8 +196,6 @@ describe Gemfile do
           File.read('Gemfile').should have_line("gem ' foo ', '>= 1.3.0'")
         end
       end
-
-      it 'should reconcile multiple '
     end
 
     describe 'Insecure sources' do
@@ -217,11 +214,13 @@ describe Gemfile do
       it 'should support .gemspec files too'
     end
 
-    it 'could have command to update all specific versions to twiddle-waka'
+    describe 'update gemfile requirements' do
+      it 'could have command to update all specific versions to twiddle-waka'
 
-    it 'could have command to update all too-specific twiddle-waka to less specific'
+      it 'could have command to update all too-specific twiddle-waka to less specific'
 
-    it 'could have command to update all greater than or equal to to twiddle-waka'
+      it 'could have command to update all greater than or equal to to twiddle-waka'
+    end
   end
 end
 

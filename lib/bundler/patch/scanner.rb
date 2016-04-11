@@ -81,9 +81,7 @@ module Bundler::Patch
 
       prep = DefinitionPrep.new(bundler_def, gem_patches, options).tap { |p| p.prep }
 
-      # TODO: review where the update key's value is used? Can't find it.
-      options = {'update' => prep.unlock}
-      Bundler::Installer.install(Bundler.root, prep.bundler_def, options)
+      Bundler::Installer.install(Bundler.root, prep.bundler_def)
     end
   end
 end

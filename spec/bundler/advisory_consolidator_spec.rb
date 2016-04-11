@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-describe Scanner do
+describe AdvisoryConsolidator do
   before do
     @bf = BundlerFixture.new
     @inc = 1

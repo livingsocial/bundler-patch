@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-describe Scanner do
+describe ConservativeResolver do
   before do
     @bf = BundlerFixture.new
   end
@@ -24,12 +24,12 @@ describe Scanner do
       result.flatten.map(&:version).map(&:to_s)
     end
 
-    def unlocking
-      true
+    def unlocking(options={})
+      @cr.gems_to_update = GemsToUpdate.new(GemPatch.new(gem_name: 'foo'), options)
     end
 
-    def keep_locked
-      false
+    def keep_locked(options={})
+      @cr.gems_to_update = GemsToUpdate.new(GemPatch.new(gem_name: 'bar'), options)
     end
 
     before do
@@ -48,28 +48,32 @@ describe Scanner do
     # would not consider conservative.
     context 'filter specs (strict) (minor not allowed)' do
       it 'when keeping locked, keep current, next release' do
+        keep_locked
         res = @cr.filter_specs(create_specs('foo', %w(1.7.8 1.7.9 1.8.0)),
-                               keep_locked, locked('foo', '1.7.8'))
+                               locked('foo', '1.7.8'))
         versions(res).should == %w(1.7.9 1.7.8)
       end
 
       it 'when unlocking prefer next release first' do
+        unlocking
         res = @cr.filter_specs(create_specs('foo', %w(1.7.8 1.7.9 1.8.0)),
-                               unlocking, locked('foo', '1.7.8'))
+                               locked('foo', '1.7.8'))
         versions(res).should == %w(1.7.8 1.7.9)
       end
 
       it 'when unlocking keep current when already at latest release' do
+        unlocking
         res = @cr.filter_specs(create_specs('foo', %w(1.7.9 1.8.0 2.0.0)),
-                               unlocking, locked('foo', '1.7.9'))
+                               locked('foo', '1.7.9'))
         versions(res).should == %w(1.7.9)
       end
     end
 
     context 'sort specs (not strict) (minor not allowed)' do
       it 'when not unlocking order by current, next release, next minor' do
+        keep_locked
         res = @cr.sort_specs(create_specs('foo', %w(1.7.6 1.7.7 1.7.8 1.7.9 1.8.0 2.0.0)),
-                             keep_locked, locked('foo', '1.7.7'))
+                             locked('foo', '1.7.7'))
         versions(res).should == %w(2.0.0 1.8.0 1.7.8 1.7.9 1.7.7)
 
         # From right-to-left:
@@ -81,52 +85,50 @@ describe Scanner do
       end
 
       it 'when unlocking favor next release, then current over minor increase' do
+        unlocking
         res = @cr.sort_specs(create_specs('foo', %w(1.7.7 1.7.8 1.7.9 1.8.0)),
-                             unlocking, locked('foo', '1.7.8'))
+                             locked('foo', '1.7.8'))
         versions(res).should == %w(1.8.0 1.7.8 1.7.9)
       end
 
       it 'leave current when unlocking but already at latest release' do
+        unlocking
         res = @cr.sort_specs(create_specs('foo', %w(1.7.9 1.8.0 2.0.0)),
-                             unlocking, locked('foo', '1.7.9'))
+                             locked('foo', '1.7.9'))
         versions(res).should == %w(2.0.0 1.8.0 1.7.9)
       end
 
-      # patching (ab)uses overriding the locked_spec to push up gems needing patching, and otherwise
-      # we don't want to jump up higher than what's needed, because the goal is not an overall jump
-      # to latest release/minor, but to 'just get patched' and get on with it.
-      #
-      # TODO: that attitude ^^ is debatable. Patch plus latest release/minor could also be desired.
-      it 'when unlocking and when patching order is strictly oldest to newest' do
-        @cr.gems_to_update = GemsToUpdate.new(nil, {patching: true})
-        versions = %w(1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0 3.1.1 3.2.0)
+      it 'when patching this gem, order is almost same as updating, but preferring patched version first' do
+        @cr.gems_to_update = GemsToUpdate.new(GemPatch.new(gem_name: 'foo', new_version: '1.7.8'), {patching: true})
+        versions = %w(1.7.7 1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0 3.1.1 3.2.0)
         res = @cr.sort_specs(create_specs('foo', versions),
-                             unlocking, locked('foo', '1.7.5'))
-        versions(res).should == versions.reverse
+                             locked('foo', '1.7.5'))
+        versions(res).should == %w(3.2.0 3.1.0 3.1.1 3.0.0 3.0.1 2.1.0 2.0.0 1.8.0 1.7.7 1.7.9 1.7.8)
       end
 
-      # see prior spec comment explaining why the `unlocking_gem` value here makes no difference in patching cases.
-      it 'when not unlocking and when patching order is also strictly oldest to newest' do
-        @cr.gems_to_update = GemsToUpdate.new(nil, {patching: true})
+      it 'when patching, but not this gem, order is strictly oldest to newest' do
+        keep_locked(patching: true)
         versions = %w(1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0 3.1.1 3.2.0)
         res = @cr.sort_specs(create_specs('foo', versions),
-                             keep_locked, locked('foo', '1.7.5'))
+                             locked('foo', '1.7.5'))
         versions(res).should == versions.reverse
       end
     end
 
     context 'sort specs (not strict) (minor allowed)' do
       it 'when unlocking favor next release, then minor increase over current' do
+        unlocking
         @cr.minor_allowed = true
         res = @cr.sort_specs(create_specs('foo', %w(2.4.0 2.4.1 2.5.0)),
-                             unlocking, locked('foo', '2.4.0'))
+                             locked('foo', '2.4.0'))
         versions(res).should == %w(2.4.0 2.4.1 2.5.0)
       end
 
       it 'larger case' do
+        unlocking
         @cr.minor_allowed = true
         res = @cr.sort_specs(create_specs('foo', %w(0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1)),
-                             unlocking, locked('foo', '0.2.0'))
+                             locked('foo', '0.2.0'))
         versions(res).should == %w(2.0.0 2.0.1 1.0.0 0.2.0 0.3.0 0.3.1 0.9.0)
       end
     end

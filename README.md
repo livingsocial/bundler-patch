@@ -5,9 +5,11 @@
 ## Goals
 
 - Update the Gemfile, .ruby-version and other files to patch an app according to `ruby-advisory-db` content.
-- Don't upgrade past the minimum gem version required.
+- Provide conservative update of select or all gems. Conservative meaning to the latest release (default) or minor (optional) version.
+- Don't security patch past the minimum gem version required. (This may change).
 - Minimal munging to existing version spec.
 - Support a database of custom advisories for internal gems.
+- Provide reasonable support for keeping a large number of apps and services up-to-date as automatically as possible.
 
 ## Installation
 
@@ -107,6 +109,16 @@ the downloading the full dependency data from remote sources.
 
 ## Development
 
+### Status
+
+0.x versions are subject to breaking changes, there's a fair amount of experimenting going on and some future plans to
+not only revisit the command names but also investigate making this a proper Bundler plugin.
+
+We'd love to get real world scenarios where things don't go as planned to help flesh out varying details of what many
+believe a conservative update should be.
+
+### How To
+
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can
 also run `bin/console` for an interactive prompt that will allow you to experiment.
 
@@ -122,14 +134,3 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/living
 ## License
 
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
-
-
-## Misc
-
-None of these do what we need, but may have some code doing some similar work in places.
-
-- http://www.rubydoc.info/gems/bundler-auto-update/0.1.0 (runs tests after each gem upgrade)
-- http://www.rubydoc.info/gems/bundler-updater/0.0.3 (interactive prompt for what's available to upgrade to)
-- https://github.com/rosylilly/bundler-add (outputs Gemfile line for adding a gem)
-
-

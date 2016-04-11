@@ -4,4 +4,4 @@ RSpec::Core::RakeTask.new(:spec)
 
 task :default => :spec
 
-require 'ls/gem_tasks'
+require 'bundler/gem_tasks'

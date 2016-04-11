@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ['chrismo']
   spec.email         = ['chrismo@clabs.org']
 
-  spec.summary       = %q{Patch Gemfile in various awesome ways}
+  spec.summary       = %q{Conservative bundler updates}
   # spec.description   = ''
   spec.homepage      = 'https://github.com/livingsocial/bundler-patch'
   spec.license       = 'MIT'
@@ -32,7 +32,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'bundler', '~> 1.10'
 
   spec.add_development_dependency 'bundler-fixture', '~> 1.1'
-  spec.add_development_dependency 'ls-gem_tasks'
   spec.add_development_dependency 'pry'
   spec.add_development_dependency 'rake', '~> 10.0'
   spec.add_development_dependency 'rspec'

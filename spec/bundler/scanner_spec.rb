@@ -53,7 +53,7 @@ describe Scanner do
       end
     end
 
-    it 'conservative update single' do
+    it 'single gem requested with vulnerability' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
@@ -63,7 +63,8 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.update(gems_to_update: ['rack'])
+          ENV['DEBUG_PATCH_RESOLVER'] = '1'
+          Scanner.new.patch(gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
@@ -71,43 +72,7 @@ describe Scanner do
       end
     end
 
-    it 'conservative update all' do
-      Dir.chdir(@bf.dir) do
-        GemfileLockFixture.tap do |fix|
-          fix.create(dir: @bf.dir,
-                     gems: {'rack': nil, addressable: nil},
-                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
-        end
-
-        Bundler.with_clean_env do
-          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.update
-        end
-
-        lockfile_spec_version('rack').should == '1.4.7'
-        lockfile_spec_version('addressable').should == '1.0.4'
-      end
-    end
-
-    it 'conservative update one, minor allowed' do
-      Dir.chdir(@bf.dir) do
-        GemfileLockFixture.tap do |fix|
-          fix.create(dir: @bf.dir,
-                     gems: {'rack': nil, addressable: nil},
-                     locks: {'rack': '0.2.0', addressable: '1.0.1'})
-        end
-
-        Bundler.with_clean_env do
-          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.update(minor_allowed: true, gems_to_update: ['rack'])
-        end
-
-        lockfile_spec_version('rack').should == '0.9.1'
-        lockfile_spec_version('addressable').should == '1.0.1'
-      end
-    end
-
-    it 'patches one' do
+    it 'all gems, one with vulnerability' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
@@ -118,6 +83,60 @@ describe Scanner do
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           Scanner.new.patch
+        end
+
+        lockfile_spec_version('rack').should == '1.4.7'
+        lockfile_spec_version('addressable').should == '1.0.4'
+      end
+    end
+
+    it 'all gems, one with vulnerability, -i flag' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          Scanner.new.patch(vulnerable_gems_only: true)
+        end
+
+        lockfile_spec_version('rack').should == '1.4.7'
+        lockfile_spec_version('addressable').should == '1.0.1'
+      end
+    end
+
+    it 'single gem, minor allowed' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '0.2.0', addressable: '1.0.1'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          Scanner.new.patch(minor_allowed: true, gems_to_update: ['rack'])
+        end
+
+        lockfile_spec_version('rack').should == '0.9.1'
+        lockfile_spec_version('addressable').should == '1.0.1'
+      end
+    end
+
+    it 'single gem with vulnerability, strict mode' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          Scanner.new.patch(strict: true)
         end
 
         lockfile_spec_version('rack').should == '1.4.6'

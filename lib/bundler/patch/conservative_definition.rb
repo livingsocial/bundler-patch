@@ -47,7 +47,7 @@ module Bundler::Patch
 
     def initialize(bundler_def, gem_patches, options)
       @bundler_def = bundler_def
-      @gems_to_update = GemsToUpdate.new(gem_patches)
+      @gems_to_update = GemsToPatch.new(gem_patches)
       @options = options
     end
 
@@ -85,8 +85,7 @@ module Bundler::Patch
     end
   end
 
-  # TODO: Rename to GemsToPatch for consistency?
-  class GemsToUpdate
+  class GemsToPatch
     attr_reader :gem_patches
 
     def initialize(gem_patches)

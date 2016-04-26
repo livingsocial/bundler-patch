@@ -23,16 +23,16 @@ describe ConservativeResolver do
     end
 
     def unlocking(options={})
-      @cr.gems_to_update = GemsToUpdate.new(GemPatch.new(gem_name: 'foo'), options)
+      @cr.gems_to_update = GemsToPatch.new(GemPatch.new(gem_name: 'foo'))
     end
 
     def keep_locked(options={})
-      @cr.gems_to_update = GemsToUpdate.new(GemPatch.new(gem_name: 'bar'), options)
+      @cr.gems_to_update = GemsToPatch.new(GemPatch.new(gem_name: 'bar'))
     end
 
     before do
       @cr = ConservativeResolver.new(nil, nil, [])
-      @cr.gems_to_update = GemsToUpdate.new(nil, {})
+      @cr.gems_to_update = GemsToPatch.new(nil)
     end
 
     # Rightmost (highest array index) in result is most preferred.
@@ -95,7 +95,7 @@ describe ConservativeResolver do
 
       it 'when new_version specified, still update to most recent release past patched new_version' do
         # new_version can be specified when gem is vulnerable
-        @cr.gems_to_update = GemsToUpdate.new(GemPatch.new(gem_name: 'foo', new_version: '1.7.8'))
+        @cr.gems_to_update = GemsToPatch.new(GemPatch.new(gem_name: 'foo', new_version: '1.7.8'))
         versions = %w(1.7.5 1.7.7 1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0)
         res = @cr.sort_specs(create_specs('foo', versions),
                              locked('foo', '1.7.5'))
@@ -103,8 +103,8 @@ describe ConservativeResolver do
       end
 
       it 'when new_version specified, with prefer minimal, make sure to at least get to new_version' do
-        @cr.gems_to_update = GemsToUpdate.new(GemPatch.new(gem_name: 'foo', new_version: '1.7.7'),
-                                              {prefer_minimal: true})
+        @cr.gems_to_update = GemsToPatch.new(GemPatch.new(gem_name: 'foo', new_version: '1.7.7'))
+        @cr.prefer_minimal = true
         versions = %w(1.7.5 1.7.6 1.7.7 1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0)
         res = @cr.sort_specs(create_specs('foo', versions),
                              locked('foo', '1.7.5'))
@@ -112,7 +112,8 @@ describe ConservativeResolver do
       end
 
       it 'when prefer_minimal, and not updating this gem, order is strictly oldest to newest' do
-        keep_locked(prefer_minimal: true)
+        keep_locked
+        @cr.prefer_minimal = true
         versions = %w(1.7.5 1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0)
         res = @cr.sort_specs(create_specs('foo', versions),
                              locked('foo', '1.7.5'))
@@ -120,7 +121,8 @@ describe ConservativeResolver do
       end
 
       it 'when prefer_minimal, and updating this gem, order is oldest to newest except current' do
-        unlocking(prefer_minimal: true)
+        unlocking
+        @cr.prefer_minimal = true
         versions = %w(1.7.5 1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0)
         res = @cr.sort_specs(create_specs('foo', versions),
                              locked('foo', '1.7.5'))

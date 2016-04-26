@@ -2,6 +2,7 @@ require 'bundler/advise'
 require 'boson/runner'
 
 module Bundler::Patch
+  # TODO: Rename to CLI?
   class Scanner < Boson::Runner
     def initialize
       @no_vulns_message = 'No known vulnerabilities to update.'

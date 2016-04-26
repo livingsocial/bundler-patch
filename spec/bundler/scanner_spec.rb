@@ -63,7 +63,6 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          ENV['DEBUG_PATCH_RESOLVER'] = '1'
           Scanner.new.patch(gems_to_update: ['rack'])
         end
 

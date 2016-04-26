@@ -40,7 +40,7 @@ module Bundler::Patch
         else
           GemPatch.new(gem_name: up_spec.gem_name, old_version: old_version, patched_versions: up_spec.patched_versions)
         end
-      end.partition { |gp| !gp.new_version.nil? }
+      end
     end
 
     private
@@ -61,6 +61,8 @@ module Bundler::Patch
   end
 
   class GemPatch
+    include Comparable
+
     attr_reader :gem_name, :old_version, :new_version, :patched_versions
 
     def initialize(gem_name:, old_version: nil, new_version: nil, patched_versions: nil)
@@ -68,6 +70,10 @@ module Bundler::Patch
       @old_version = Gem::Version.new(old_version) if old_version
       @new_version = Gem::Version.new(new_version) if new_version
       @patched_versions = patched_versions
+    end
+
+    def <=>(other)
+      self.gem_name <=> other.gem_name
     end
   end
 end

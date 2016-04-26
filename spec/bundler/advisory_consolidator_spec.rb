@@ -53,14 +53,23 @@ describe AdvisoryConsolidator do
         GemfileLockFixture.create(dir: @bf.dir, gems: {foo: '2.2.8'})
 
         ac = AdvisoryConsolidator.new({}, all_ads)
-        gems_to_update, warnings = ac.patch_gemfile_and_get_gem_specs_to_patch
-        gems_to_update.length.should == 0
-        warnings.length.should == 1
-        gp = warnings.first
+        gem_patches = ac.patch_gemfile_and_get_gem_specs_to_patch
+        gem_patches.length.should == 1
+        gp = gem_patches.first
         gp.gem_name.should == 'foo'
         gp.old_version.to_s.should == '2.2.8'
         gp.patched_versions.should == ['3.2.0']
       end
+    end
+  end
+
+  context 'GemPatch' do
+    it 'should be equal if gem_name matches' do
+      (GemPatch.new(gem_name: 'foo') == GemPatch.new(gem_name: 'foo')).should be true
+    end
+
+    it 'should not be equal if gem_name does not match' do
+      GemPatch.new(gem_name: 'foo').should_not == GemPatch.new(gem_name: 'bar')
     end
   end
 end

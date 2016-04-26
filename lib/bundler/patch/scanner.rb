@@ -54,25 +54,13 @@ module Bundler::Patch
     end
 
     def _patch(options)
-      vuln_gem_patches, warnings = AdvisoryConsolidator.new(options).patch_gemfile_and_get_gem_specs_to_patch
+      vulnerable_patches = AdvisoryConsolidator.new(options).patch_gemfile_and_get_gem_specs_to_patch
+      requested_patches = (options.delete(:gems_to_update) || []).map { |gem_name| GemPatch.new(gem_name: gem_name) }
 
-      requested_gem_patches = (options.delete(:gems_to_update) || []).map { |gem_name| GemPatch.new(gem_name: gem_name) }
+      all_gem_patches = GemsToPatchReconciler.new(vulnerable_patches, requested_patches).reconciled_patches
+      all_gem_patches.push(*vulnerable_patches) if options[:vulnerable_gems_only] && all_gem_patches.empty?
 
-      # TODO: extract this next bit out
-      all_gem_patches = []
-      if requested_gem_patches.empty?
-        all_gem_patches.push(*vuln_gem_patches) if options[:vulnerable_gems_only]
-      else
-        requested_gem_names = requested_gem_patches.map(&:gem_name)
-        # TODO: this would be simpler with set operators given proper <=> on GemPatch, right?
-        vuln_gem_patches.reject! { |gp| !requested_gem_names.include?(gp.gem_name) }
-        warnings.reject! { |gp| !requested_gem_names.include?(gp.gem_name) }
-
-        all_gem_patches.push(*vuln_gem_patches)
-
-        gem_patches_names = all_gem_patches.map(&:gem_name)
-        requested_gem_patches.each { |gp| all_gem_patches << gp unless gem_patches_names.include?(gp.gem_name) }
-      end
+      vulnerable_patches, warnings = vulnerable_patches.partition { |gp| !gp.new_version.nil? }
 
       unless warnings.empty?
         warnings.each do |gp|
@@ -83,18 +71,19 @@ module Bundler::Patch
         end
       end
 
-      if vuln_gem_patches.empty?
+      if vulnerable_patches.empty?
         puts @no_vulns_message
       else
-        vuln_gem_patches.each do |gp|
-          puts "Attempting update for vulnerable gem '#{gp.gem_name}': #{gp.old_version} => #{gp.new_version}" # TODO: Bundler.ui
+        vulnerable_patches.each do |gp|
+          # TODO: Bundler.ui
+          puts "Attempting conservative update for vulnerable gem '#{gp.gem_name}': #{gp.old_version} => #{gp.new_version}"
         end
       end
 
       if all_gem_patches.empty?
         puts 'Updating all gems conservatively.'
       else
-        puts "Updating '#{all_gem_patches.map(&:gem_name).join(' ')}'"
+        puts "Updating '#{all_gem_patches.map(&:gem_name).join(' ')}' conservatively."
       end
       conservative_update(all_gem_patches, options)
     end

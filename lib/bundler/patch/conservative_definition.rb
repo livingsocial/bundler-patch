@@ -85,6 +85,7 @@ module Bundler::Patch
     end
   end
 
+  # TODO: Rename to GemsToPatch for consistency?
   class GemsToUpdate
     attr_reader :gem_patches
 

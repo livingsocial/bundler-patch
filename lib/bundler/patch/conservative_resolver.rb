@@ -62,6 +62,7 @@ module Bundler::Patch
       sort_specs(res, locked_spec)
     end
 
+    # reminder: sort still filters anything older than locked version
     def sort_specs(specs, locked_spec)
       return specs unless locked_spec
       gem_name = locked_spec.name
@@ -72,37 +73,44 @@ module Bundler::Patch
       filtered.sort do |a, b|
         a_ver = a.first.version
         b_ver = b.first.version
+        gem_patch = @gems_to_update.gem_patch_for(gem_name)
+        new_version = gem_patch ? gem_patch.new_version : nil
         case
         when a_ver.segments[0] != b_ver.segments[0]
           b_ver <=> a_ver
         when !@minor_allowed && (a_ver.segments[1] != b_ver.segments[1])
           b_ver <=> a_ver
-        when @gems_to_update.patching_but_not_this_gem?(gem_name)
+        when @gems_to_update.prefer_minimal? && !@gems_to_update.unlocking_gem?(gem_name)
+          b_ver <=> a_ver
+        when @gems_to_update.prefer_minimal? && @gems_to_update.unlocking_gem?(gem_name) &&
+          (![a_ver, b_ver].include?(locked_version) &&
+            (!new_version || (new_version && a_ver >= new_version && b_ver >= new_version)))
           b_ver <=> a_ver
         else
           a_ver <=> b_ver
         end
       end.tap do |result|
         if @gems_to_update.unlocking_gem?(gem_name)
-          if @gems_to_update.patching_gem?(gem_name)
-            # this logic will keep a gem from updating past the patched version
-            # if a more recent release (or minor, if enabled) version exists.
-            # TODO: not sure if we want this special logic to remain or not.
-            new_version = @gems_to_update.gem_patch_for(gem_name).new_version
-            swap_version_to_end(specs, new_version, result) if new_version
+          gem_patch = @gems_to_update.gem_patch_for(gem_name)
+          if gem_patch && gem_patch.new_version && @gems_to_update.prefer_minimal?
+            move_version_to_end(specs, gem_patch.new_version, result)
           end
         else
-          # make sure the current locked version is last in list.
-          swap_version_to_end(specs, locked_version, result)
+          move_version_to_end(specs, locked_version, result)
         end
       end
     end
 
-    def swap_version_to_end(specs, version, result)
+    def move_version_to_end(specs, version, result)
+      move_version_with(specs, version, result, :push)
+    end
+
+    # TODO: inline refactor
+    def move_version_with(specs, version, result, meth_sym)
       spec_group = specs.detect { |s| s.first.version.to_s == version.to_s }
       if spec_group
         result.reject! { |s| s.first.version.to_s === version.to_s }
-        result << spec_group
+        result.send(meth_sym, spec_group)
       end
     end
   end

@@ -11,9 +11,7 @@ describe ConservativeResolver do
 
   context 'conservative resolver' do
     def create_specs(gem_name, versions)
-      versions.map do |v|
-        @bf.create_spec(gem_name, v)
-      end.map { |s| [s] }
+      @bf.create_specs(gem_name, versions).map { |s| Array(s) }
     end
 
     def locked(gem_name, version)
@@ -69,19 +67,16 @@ describe ConservativeResolver do
       end
     end
 
-    context 'sort specs (not strict) (minor not allowed)' do
-      it 'when not unlocking order by current, next release, next minor' do
-        keep_locked
-        res = @cr.sort_specs(create_specs('foo', %w(1.7.6 1.7.7 1.7.8 1.7.9 1.8.0 2.0.0)),
-                             locked('foo', '1.7.7'))
-        versions(res).should == %w(2.0.0 1.8.0 1.7.8 1.7.9 1.7.7)
+    context 'filter specs (strict) (minor preferred)' do
+      it 'should have specs'
+    end
 
-        # From right-to-left:
-        # prefer the current version first (keep locked is true!)
-        # prefer the most recent maj.min next
-        # prefer remaining maj.min next
-        # prefer minor increase next
-        # prefer major increase last
+    context 'sort specs (not strict) (minor not allowed)' do
+      it 'when not unlocking, same order but make sure locked version is most preferred to stay put' do
+        keep_locked
+        res = @cr.sort_specs(create_specs('foo', %w(1.7.6 1.7.7 1.7.8 1.7.9 1.8.0 1.8.1 2.0.0 2.0.1)),
+                             locked('foo', '1.7.7'))
+        versions(res).should == %w(2.0.0 2.0.1 1.8.0 1.8.1 1.7.8 1.7.9 1.7.7)
       end
 
       it 'when unlocking favor next release, then current over minor increase' do
@@ -98,20 +93,38 @@ describe ConservativeResolver do
         versions(res).should == %w(2.0.0 1.8.0 1.7.9)
       end
 
-      it 'when patching this gem, order is almost same as updating, but preferring patched version first' do
-        @cr.gems_to_update = GemsToUpdate.new(GemPatch.new(gem_name: 'foo', new_version: '1.7.8'), {patching: true})
-        versions = %w(1.7.7 1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0 3.1.1 3.2.0)
+      it 'when new_version specified, still update to most recent release past patched new_version' do
+        # new_version can be specified when gem is vulnerable
+        @cr.gems_to_update = GemsToUpdate.new(GemPatch.new(gem_name: 'foo', new_version: '1.7.8'))
+        versions = %w(1.7.5 1.7.7 1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0)
         res = @cr.sort_specs(create_specs('foo', versions),
                              locked('foo', '1.7.5'))
-        versions(res).should == %w(3.2.0 3.1.0 3.1.1 3.0.0 3.0.1 2.1.0 2.0.0 1.8.0 1.7.7 1.7.9 1.7.8)
+        versions(res).should == %w(3.1.0 3.0.0 3.0.1 2.1.0 2.0.0 1.8.0 1.7.5 1.7.7 1.7.8 1.7.9)
       end
 
-      it 'when patching, but not this gem, order is strictly oldest to newest' do
-        keep_locked(patching: true)
-        versions = %w(1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0 3.1.1 3.2.0)
+      it 'when new_version specified, with prefer minimal, make sure to at least get to new_version' do
+        @cr.gems_to_update = GemsToUpdate.new(GemPatch.new(gem_name: 'foo', new_version: '1.7.7'),
+                                              {prefer_minimal: true})
+        versions = %w(1.7.5 1.7.6 1.7.7 1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0)
+        res = @cr.sort_specs(create_specs('foo', versions),
+                             locked('foo', '1.7.5'))
+        versions(res).should == %w(3.1.0 3.0.1 3.0.0 2.1.0 2.0.0 1.8.0 1.7.5 1.7.6 1.7.9 1.7.8 1.7.7)
+      end
+
+      it 'when prefer_minimal, and not updating this gem, order is strictly oldest to newest' do
+        keep_locked(prefer_minimal: true)
+        versions = %w(1.7.5 1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0)
         res = @cr.sort_specs(create_specs('foo', versions),
                              locked('foo', '1.7.5'))
         versions(res).should == versions.reverse
+      end
+
+      it 'when prefer_minimal, and updating this gem, order is oldest to newest except current' do
+        unlocking(prefer_minimal: true)
+        versions = %w(1.7.5 1.7.8 1.7.9 1.8.0 2.0.0 2.1.0 3.0.0 3.0.1 3.1.0)
+        res = @cr.sort_specs(create_specs('foo', versions),
+                             locked('foo', '1.7.5'))
+        versions(res).should == %w(3.1.0 3.0.1 3.0.0 2.1.0 2.0.0 1.8.0 1.7.5 1.7.9 1.7.8)
       end
     end
 
@@ -119,18 +132,14 @@ describe ConservativeResolver do
       it 'when unlocking favor next release, then minor increase over current' do
         unlocking
         @cr.minor_allowed = true
-        res = @cr.sort_specs(create_specs('foo', %w(2.4.0 2.4.1 2.5.0)),
-                             locked('foo', '2.4.0'))
-        versions(res).should == %w(2.4.0 2.4.1 2.5.0)
-      end
-
-      it 'larger case' do
-        unlocking
-        @cr.minor_allowed = true
         res = @cr.sort_specs(create_specs('foo', %w(0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1)),
                              locked('foo', '0.2.0'))
         versions(res).should == %w(2.0.0 2.0.1 1.0.0 0.2.0 0.3.0 0.3.1 0.9.0)
       end
+
+      it 'new version specified'
+
+      it 'new version specified, prefer_minimal'
     end
   end
 end

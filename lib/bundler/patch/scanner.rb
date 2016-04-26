@@ -7,13 +7,10 @@ module Bundler::Patch
       @no_vulns_message = 'No known vulnerabilities to update.'
     end
 
-    # strict could- if not unlocking gem, restrict available to just the locked version.
-    #             - patching, encourage minimum patch even if a later release (or minor) exists
-    # IOW - patching as a flag goes away. strict is what signals 'patching' behavior.
-
-    option :list, type: :boolean, desc: 'List vulnerabilities. No updates will be performed.'
-    option :strict, type: :boolean, desc: 'Do not allow any gem to be upgraded past most recent release (or minor if -m used). Sometimes raises VersionConflict.'
-    option :minor_allowed, type: :boolean, desc: 'Upgrade to the latest minor.release version.'
+    option :list, type: :boolean, desc: 'List vulnerable gems and new version target. No updates will be performed.'
+    option :prefer_minimal, type: :boolean, desc: 'Prefer minimal version updates instead of most recent release (or minor if -m used).'
+    option :strict_updates, type: :boolean, desc: 'Do not allow any gem to be upgraded past most recent release (or minor if -m used). Sometimes raises VersionConflict.'
+    option :minor_allowed, type: :boolean, desc: 'Prefer update to the latest minor.release version.'
     option :advisory_db_path, type: :string, desc: 'Optional custom advisory db path.'
     option :vulnerable_gems_only, type: :boolean, alias: '-i', desc: 'Only update vulnerable gems.'
     # TODO: be nice to support array w/o quotes like real `bundle update`
@@ -61,8 +58,11 @@ module Bundler::Patch
 
       requested_gem_patches = (options.delete(:gems_to_update) || []).map { |gem_name| GemPatch.new(gem_name: gem_name) }
 
+      # TODO: extract this next bit out
       all_gem_patches = []
-      unless requested_gem_patches.empty?
+      if requested_gem_patches.empty?
+        all_gem_patches.push(*vuln_gem_patches) if options[:vulnerable_gems_only]
+      else
         requested_gem_names = requested_gem_patches.map(&:gem_name)
         # TODO: this would be simpler with set operators given proper <=> on GemPatch, right?
         vuln_gem_patches.reject! { |gp| !requested_gem_names.include?(gp.gem_name) }
@@ -96,8 +96,7 @@ module Bundler::Patch
       else
         puts "Updating '#{all_gem_patches.map(&:gem_name).join(' ')}'"
       end
-      conservative_update(all_gem_patches, options.merge(patching: !vuln_gem_patches.empty?))
-      #conservative_update(all_gem_patches, options.merge(patching: false))
+      conservative_update(all_gem_patches, options)
     end
   end
 end

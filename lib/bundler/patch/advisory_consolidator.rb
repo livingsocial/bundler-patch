@@ -65,8 +65,8 @@ module Bundler::Patch
 
     def initialize(gem_name:, old_version: nil, new_version: nil, patched_versions: nil)
       @gem_name = gem_name
-      @old_version = old_version
-      @new_version = new_version
+      @old_version = Gem::Version.new(old_version) if old_version
+      @new_version = Gem::Version.new(new_version) if new_version
       @patched_versions = patched_versions
     end
   end

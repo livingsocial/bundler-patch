@@ -6,7 +6,6 @@
 
 - Update the Gemfile, .ruby-version and other files to patch an app according to `ruby-advisory-db` content.
 - Provide conservative update of select or all gems. Conservative meaning to the latest release (default) or minor (optional) version.
-- Don't security patch past the minimum gem version required. (This may change).
 - Minimal munging to existing version spec.
 - Support a database of custom advisories for internal gems.
 - Provide reasonable support for keeping a large number of apps and services up-to-date as automatically as possible.
@@ -116,6 +115,41 @@ not only revisit the command names but also investigate making this a proper Bun
 
 We'd love to get real world scenarios where things don't go as planned to help flesh out varying details of what many
 believe a conservative update should be.
+
+#### What Does Conservative Really Mean?
+
+During 0.x development there was some separation of thought when `patching` vs. `updating` - in that `patching` would
+be even more conservative. For example, given `foo` is currently at 1.7.7, with 1.7.8 & 1.7.9 available, `updating`
+perhaps is a conservative update that wants the latest release available: 1.7.9. Why move to 1.7.8 when 1.7.9 probably
+has a bugfix in it and my goal my be to help keep everything generally current without increase minor or major versions?
+But if I'm `patching` I perhaps don't care if 1.7.9 has a bug fix for 1.7.8, I really just want to get in and
+out with the least amount of change regardless, I just want to get past my security vulnerability and move on.
+
+Solving this in general is hard, because SemVer is only a theory, sometimes even 1.7.9 instead of 1.7.8 ends up _adding_
+a bug, not removing one, and sometimes the example is going from 1.0.0 to 1.0.1 or 1.0.37, and now "most recent release"
+doesn't feel conservative anymore.
+
+`--strict` mode was a notion thrown around that started getting overloaded and confusing. Two ideas for it:
+- "Don't let dependent gems even be considered for minor/major upgrades, even if it crashes resolution"
+- "Sort the results such that we go in strict reverse order, not latest release, then latest minor, then latest major"
+
+Also - if `--minor_allowed` is true, I'm on 1.1.0, there's 1.3.4 and 1.5.6, which is it going to? 1.5.6 or 1.3.4?
+
+
+Now that we're merging everything under `patch` - need switches for the two stricts.
+`--strict-ordering` `--strict-sort`
+`--strict-filtering` `--strict-filter` ``
+
+`--prefer-older`
+`--prevent-minmaj-dependent`
+
+
+`--strict-increment`
+`--strict-dependent-updates`
+
+
+
+
 
 ### How To
 

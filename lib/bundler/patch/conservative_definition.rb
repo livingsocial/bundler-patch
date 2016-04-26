@@ -54,7 +54,7 @@ module Bundler::Patch
       @bundler_def ||= Bundler.definition(@gems_to_update.to_bundler_definition)
       @bundler_def.extend ConservativeDefinition
       @bundler_def.gems_to_update = @gems_to_update
-      @bundler_def.strict = @options[:strict]
+      @bundler_def.strict = @options[:strict_updates]
       @bundler_def.minor_allowed = @options[:minor_allowed]
       fixup_empty_remotes if @gems_to_update.to_bundler_definition === true
       @bundler_def
@@ -84,11 +84,11 @@ module Bundler::Patch
   end
 
   class GemsToUpdate
-    attr_reader :gem_patches, :patching
+    attr_reader :gem_patches, :prefer_minimal
 
     def initialize(gem_patches, options={})
       @gem_patches = Array(gem_patches)
-      @patching = options[:patching]
+      @prefer_minimal = options[:prefer_minimal]
     end
 
     def to_bundler_definition
@@ -99,12 +99,9 @@ module Bundler::Patch
       @gem_patches.map(&:gem_name)
     end
 
-    def patching_gem?(gem_name)
-      @patching && to_gem_names.include?(gem_name)
-    end
-
-    def patching_but_not_this_gem?(gem_name)
-      @patching && !to_gem_names.include?(gem_name)
+    # TODO: don't pass this here. this class doesn't need it. pass to resolver.
+    def prefer_minimal?
+      @prefer_minimal
     end
 
     def gem_patch_for(gem_name)
@@ -112,7 +109,7 @@ module Bundler::Patch
     end
 
     def unlocking_all?
-      @patching || @gem_patches.empty?
+      @gem_patches.empty?
     end
 
     def unlocking_gem?(gem_name)

@@ -58,7 +58,7 @@ describe AdvisoryConsolidator do
         warnings.length.should == 1
         gp = warnings.first
         gp.gem_name.should == 'foo'
-        gp.old_version.should == '2.2.8'
+        gp.old_version.to_s.should == '2.2.8'
         gp.patched_versions.should == ['3.2.0']
       end
     end

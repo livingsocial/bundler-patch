@@ -126,7 +126,7 @@ describe Scanner do
       end
     end
 
-    it 'single gem with vulnerability, strict mode' do
+    it 'all gems, one with vulnerability, strict mode' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
@@ -139,8 +139,48 @@ describe Scanner do
           Scanner.new.patch(strict: true)
         end
 
-        lockfile_spec_version('rack').should == '1.4.6'
+        # only diff here would be if a dependency of rack would otherwise go up a minor
+        # or major version. since there is no dependency here, this is the same result
+        # with or without strict flag. this integration test inadequate to demonstrate
+        # the difference.
+        lockfile_spec_version('rack').should == '1.4.7'
+        lockfile_spec_version('addressable').should == '1.0.4'
+      end
+    end
+
+    it 'single gem with vulnerability, strict mode' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          Scanner.new.patch(strict: true, gems_to_update: ['rack'])
+        end
+
+        lockfile_spec_version('rack').should == '1.4.7'
         lockfile_spec_version('addressable').should == '1.0.1'
+      end
+    end
+
+    it 'single gem, other with vulnerability, strict mode' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          Scanner.new.patch(strict: true, gems_to_update: ['addressable'])
+        end
+
+        lockfile_spec_version('rack').should == '1.4.1'
+        lockfile_spec_version('addressable').should == '1.0.4'
       end
     end
 

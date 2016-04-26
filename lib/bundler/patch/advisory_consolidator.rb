@@ -75,5 +75,13 @@ module Bundler::Patch
     def <=>(other)
       self.gem_name <=> other.gem_name
     end
+
+    def hash
+      @gem_name.hash
+    end
+
+    def eql?(other)
+      @gem_name.eql?(other.gem_name)
+    end
   end
 end

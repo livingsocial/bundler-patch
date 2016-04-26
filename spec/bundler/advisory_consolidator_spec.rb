@@ -71,5 +71,9 @@ describe AdvisoryConsolidator do
     it 'should not be equal if gem_name does not match' do
       GemPatch.new(gem_name: 'foo').should_not == GemPatch.new(gem_name: 'bar')
     end
+
+    it 'should be uniq-able' do
+      [GemPatch.new(gem_name: 'foo'), GemPatch.new(gem_name: 'foo')].uniq.length.should == 1
+    end
   end
 end

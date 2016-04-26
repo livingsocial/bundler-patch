@@ -6,6 +6,10 @@ module Bundler::Patch
       res = super(dependency)
 
       dep = dependency.dep unless dependency.is_a? Gem::Dependency
+
+      # TODO warn this case here where only one version returned
+      STDERR.puts ">> super search_for: #{debug_format_result(dep, res).inspect}" if ENV['DEBUG_PATCH_RESOLVER']
+
       @conservative_search_for ||= {}
       #@conservative_search_for[dep] ||= # TODO turning off caching allowed a real-world sample to work, dunno why yet.
       begin
@@ -19,15 +23,14 @@ module Bundler::Patch
           filter_specs(res, locked_spec) :
           sort_specs(res, locked_spec)).tap do |res|
           if ENV['DEBUG_PATCH_RESOLVER']
-            # TODO: if we keep this, gotta go through Bundler.ui
             begin
               if res
-                p debug_format_result(dep, res)
+                STDERR.puts debug_format_result(dep, res).inspect
               else
-                p "No res for #{dep.to_s}. Orig res: #{super(dependency)}"
+                STDERR.puts "No res for #{dep.to_s}. Orig res: #{super(dependency)}"
               end
             rescue => e
-              p [e.message, e.backtrace[0..5]]
+              STDERR.puts [e.message, e.backtrace[0..5]].inspect
             end
           end
         end

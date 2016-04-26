@@ -20,6 +20,8 @@ module Bundler::Patch
     config default_option: 'gems_to_update'
 
     def patch(options={})
+      Bundler.ui = Bundler::UI::Shell.new
+
       header
 
       return list(options) if options[:list]
@@ -30,12 +32,10 @@ module Bundler::Patch
     private
 
     def header
-      puts "Bundler Patch Version #{Bundler::Patch::VERSION}"
+      Bundler.ui.info "Bundler Patch Version #{Bundler::Patch::VERSION}"
     end
 
     def conservative_update(gem_patches, options={}, bundler_def=nil)
-      Bundler.ui = Bundler::UI::Shell.new
-
       prep = DefinitionPrep.new(bundler_def, gem_patches, options).tap { |p| p.prep }
 
       Bundler::Installer.install(Bundler.root, prep.bundler_def)
@@ -45,12 +45,12 @@ module Bundler::Patch
       gem_patches = AdvisoryConsolidator.new(options).vulnerable_gems
 
       if gem_patches.empty?
-        puts @no_vulns_message
+        Bundler.ui.info @no_vulns_message
       else
-        puts # extra line to separate from advisory db update text
-        puts 'Detected vulnerabilities:'
-        puts '-------------------------'
-        puts gem_patches.map(&:to_s).uniq.sort.join("\n")
+        Bundler.ui.info '' # extra line to separate from advisory db update text
+        Bundler.ui.info 'Detected vulnerabilities:'
+        Bundler.ui.info '-------------------------'
+        Bundler.ui.info gem_patches.map(&:to_s).uniq.sort.join("\n")
       end
     end
 
@@ -65,26 +65,24 @@ module Bundler::Patch
 
       unless warnings.empty?
         warnings.each do |gp|
-          # TODO: Bundler.ui
-          puts "* Could not attempt upgrade for #{gp.gem_name} from #{gp.old_version} to any patched versions " \
+          Bundler.ui.warn "* Could not attempt upgrade for #{gp.gem_name} from #{gp.old_version} to any patched versions " \
             + "#{gp.patched_versions.join(', ')}. Most often this is because a major version increment would be " \
             + "required and it's safer for a major version increase to be done manually."
         end
       end
 
       if vulnerable_patches.empty?
-        puts @no_vulns_message
+        Bundler.ui.info @no_vulns_message
       else
         vulnerable_patches.each do |gp|
-          # TODO: Bundler.ui
-          puts "Attempting conservative update for vulnerable gem '#{gp.gem_name}': #{gp.old_version} => #{gp.new_version}"
+          Bundler.ui.info "Attempting conservative update for vulnerable gem '#{gp.gem_name}': #{gp.old_version} => #{gp.new_version}"
         end
       end
 
       if all_gem_patches.empty?
-        puts 'Updating all gems conservatively.'
+        Bundler.ui.info 'Updating all gems conservatively.'
       else
-        puts "Updating '#{all_gem_patches.map(&:gem_name).join(' ')}' conservatively."
+        Bundler.ui.info "Updating '#{all_gem_patches.map(&:gem_name).join(' ')}' conservatively."
       end
       conservative_update(all_gem_patches, options)
     end

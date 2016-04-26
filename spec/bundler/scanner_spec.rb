@@ -25,34 +25,7 @@ describe Scanner do
     @bf.parsed_lockfile_spec(gem_name).version.to_s
   end
 
-  # NOTE: doing complicated real life cases from within specs can still result
-  # in weird results inside Bundler. It can be a nice way to try and debug
-  # a real case, but make sure and keep double checking the same behavior is
-  # occurring outside of RSpec and this tmpdir setup, or you might drive u-self
-  # crayz. The following tests are nice and simple to at least exercise the
-  # basic mechanisms, but are not intended to be comprehensive.
   context 'integration tests' do
-    # you can re-use this case to help troubleshoot, just beware the big comment above.
-    xit 'real case' do
-      @do_not_cleanup = true
-      Dir.chdir(@bf.dir) do
-        %w(Gemfile Gemfile.lock).each do |fn|
-          FileUtils.cp(File.join(File.expand_path(""), fn), File.join(@bf.dir), verbose: true)
-        end
-
-        Bundler.with_clean_env do
-          system 'bundle install --path zz'
-
-          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          ENV['DEBUG_PATCH_RESOLVER'] = '1'
-          ENV['DEBUG_RESOLVER'] = '1'
-          Scanner.new.patch
-        end
-
-        lockfile_spec_version('mail').should == '2.6.0'
-      end
-    end
-
     it 'single gem requested with vulnerability' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
@@ -99,6 +72,7 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          ENV['DEBUG_PATCH_RESOLVER']= '1'
           Scanner.new.patch(vulnerable_gems_only: true)
         end
 

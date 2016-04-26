@@ -1,6 +1,6 @@
 module Bundler::Patch
   class ConservativeResolver < Bundler::Resolver
-    attr_accessor :locked_specs, :gems_to_update, :strict, :minor_allowed
+    attr_accessor :locked_specs, :gems_to_update, :strict, :minor_allowed, :prefer_minimal
 
     def search_for(dependency)
       res = super(dependency)
@@ -80,9 +80,9 @@ module Bundler::Patch
           b_ver <=> a_ver
         when !@minor_allowed && (a_ver.segments[1] != b_ver.segments[1])
           b_ver <=> a_ver
-        when @gems_to_update.prefer_minimal? && !@gems_to_update.unlocking_gem?(gem_name)
+        when @prefer_minimal && !@gems_to_update.unlocking_gem?(gem_name)
           b_ver <=> a_ver
-        when @gems_to_update.prefer_minimal? && @gems_to_update.unlocking_gem?(gem_name) &&
+        when @prefer_minimal && @gems_to_update.unlocking_gem?(gem_name) &&
           (![a_ver, b_ver].include?(locked_version) &&
             (!new_version || (new_version && a_ver >= new_version && b_ver >= new_version)))
           b_ver <=> a_ver
@@ -92,7 +92,7 @@ module Bundler::Patch
       end.tap do |result|
         if @gems_to_update.unlocking_gem?(gem_name)
           gem_patch = @gems_to_update.gem_patch_for(gem_name)
-          if gem_patch && gem_patch.new_version && @gems_to_update.prefer_minimal?
+          if gem_patch && gem_patch.new_version && @prefer_minimal
             move_version_to_end(specs, gem_patch.new_version, result)
           end
         else
@@ -102,15 +102,10 @@ module Bundler::Patch
     end
 
     def move_version_to_end(specs, version, result)
-      move_version_with(specs, version, result, :push)
-    end
-
-    # TODO: inline refactor
-    def move_version_with(specs, version, result, meth_sym)
       spec_group = specs.detect { |s| s.first.version.to_s == version.to_s }
       if spec_group
         result.reject! { |s| s.first.version.to_s === version.to_s }
-        result.send(meth_sym, spec_group)
+        result << spec_group
       end
     end
   end

@@ -3,7 +3,7 @@ module Bundler::Patch
     attr_accessor :gems_to_update
 
     # pass-through options to ConservativeResolver
-    attr_accessor :strict, :minor_allowed
+    attr_accessor :strict, :minor_allowed, :prefer_minimal
 
     # This copies more code than I'd like out of Bundler::Definition, but for now seems the least invasive way in.
     # Backing up and intervening into the creation of a Definition instance itself involves a lot more code, a lot
@@ -32,6 +32,7 @@ module Bundler::Patch
           resolver.locked_specs = locked_specs
           resolver.strict = @strict
           resolver.minor_allowed = @minor_allowed
+          resolver.prefer_minimal = @prefer_minimal
           result = resolver.start(expanded_dependencies)
           spec_set = Bundler::SpecSet.new(result)
 
@@ -46,7 +47,7 @@ module Bundler::Patch
 
     def initialize(bundler_def, gem_patches, options)
       @bundler_def = bundler_def
-      @gems_to_update = GemsToUpdate.new(gem_patches, options)
+      @gems_to_update = GemsToUpdate.new(gem_patches)
       @options = options
     end
 
@@ -56,6 +57,7 @@ module Bundler::Patch
       @bundler_def.gems_to_update = @gems_to_update
       @bundler_def.strict = @options[:strict_updates]
       @bundler_def.minor_allowed = @options[:minor_allowed]
+      @bundler_def.prefer_minimal = @options[:prefer_minimal]
       fixup_empty_remotes if @gems_to_update.to_bundler_definition === true
       @bundler_def
     end
@@ -84,11 +86,10 @@ module Bundler::Patch
   end
 
   class GemsToUpdate
-    attr_reader :gem_patches, :prefer_minimal
+    attr_reader :gem_patches
 
-    def initialize(gem_patches, options={})
+    def initialize(gem_patches)
       @gem_patches = Array(gem_patches)
-      @prefer_minimal = options[:prefer_minimal]
     end
 
     def to_bundler_definition
@@ -97,11 +98,6 @@ module Bundler::Patch
 
     def to_gem_names
       @gem_patches.map(&:gem_name)
-    end
-
-    # TODO: don't pass this here. this class doesn't need it. pass to resolver.
-    def prefer_minimal?
-      @prefer_minimal
     end
 
     def gem_patch_for(gem_name)

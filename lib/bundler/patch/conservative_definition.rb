@@ -58,7 +58,7 @@ module Bundler::Patch
       @bundler_def.strict = @options[:strict_updates]
       @bundler_def.minor_allowed = @options[:minor_allowed]
       @bundler_def.prefer_minimal = @options[:prefer_minimal]
-      fixup_empty_remotes # if @gems_to_update.to_bundler_definition === true
+      #fixup_empty_remotes # if @gems_to_update.to_bundler_definition === true
       @bundler_def
     end
 
@@ -78,6 +78,9 @@ module Bundler::Patch
     # converge_sources. Without those set, then the index will list no gem versions in
     # some cases. (It was complicated enough to discover this patch, I haven't fully
     # worked out the flaw, which still could be on my side of the fence).
+    #
+    # Prolly a big lark. Real fix in passing 'update'=>true to Installer? (Though couldn't
+    # I recreate a similar problem with just `bundle update`?)
     def fixup_empty_remotes
       STDERR.puts 'fixing empty remotes' if ENV['DEBUG_PATCH_RESOLVER']
       b_sources = @bundler_def.send(:sources)

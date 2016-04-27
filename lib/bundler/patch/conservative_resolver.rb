@@ -10,7 +10,6 @@ module Bundler::Patch
       # TODO warn this case here where only one version returned
       if ENV['DEBUG_PATCH_RESOLVER']
         STDERR.puts ">> super search_for: #{debug_format_result(dep, res).inspect}"
-        STDERR.puts @index.inspect
       end
 
       @conservative_search_for ||= {}

@@ -53,7 +53,10 @@ module Bundler::Patch
     def conservative_update(gem_patches, options={}, bundler_def=nil)
       prep = DefinitionPrep.new(bundler_def, gem_patches, options).tap { |p| p.prep }
 
-      Bundler::Installer.install(Bundler.root, prep.bundler_def)
+      # update => true is very important, otherwise without any Gemfile changes, the installer
+      # may end up concluding everything can be resolved locally, nothing is changing,
+      # and then nothing is done. lib/bundler/cli/update.rb also hard-codes this.
+      Bundler::Installer.install(Bundler.root, prep.bundler_def, {'update' => true})
     end
 
     def list(options)

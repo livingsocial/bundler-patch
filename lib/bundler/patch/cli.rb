@@ -32,7 +32,7 @@ module Bundler::Patch
     end
 
     def self.show_man
-      print File.read(File.expand_path('../../../../man/bundler-patch.txt', __FILE__))
+      Kernel.exec "less '#{File.expand_path('../../../../man/bundler-patch.txt', __FILE__)}'"
       exit
     end
 

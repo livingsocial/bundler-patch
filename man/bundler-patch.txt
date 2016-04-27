@@ -1,5 +1,3 @@
-# This isn't in man format yet, but it's a start...
-
 bundler-patch attempts to patch gems conservatively. By default,
 "conservatively" means it will prefer the latest release from the
 current version, followed by the latest minor release and then finally
@@ -17,9 +15,9 @@ defined in the Gemfile, and versions 1.0.3, 1.0.4, 1.1.0, 1.1.1, 2.0.0
 all exist, the default order of preference will be "1.0.4, 1.0.3, 1.0.2,
 1.1.1, 1.1.0, 2.0.0".
 
-If no gem names are listed, then all gems will be unlocked and open for
-updating. A list of gem names can be passed to restrict to just those
-gems.
+If no gem names are provided, then all gems will be unlocked and open
+for updating. A list of gem names can be passed to restrict to just
+those gems.
 
 The -m/--minor_allowed option will give preference for minor versions
 over release versions.

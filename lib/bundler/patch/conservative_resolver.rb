@@ -8,7 +8,10 @@ module Bundler::Patch
       dep = dependency.dep unless dependency.is_a? Gem::Dependency
 
       # TODO warn this case here where only one version returned
-      STDERR.puts ">> super search_for: #{debug_format_result(dep, res).inspect}" if ENV['DEBUG_PATCH_RESOLVER']
+      if ENV['DEBUG_PATCH_RESOLVER']
+        STDERR.puts ">> super search_for: #{debug_format_result(dep, res).inspect}"
+        STDERR.puts @index.inspect
+      end
 
       @conservative_search_for ||= {}
       #@conservative_search_for[dep] ||= # TODO turning off caching allowed a real-world sample to work, dunno why yet.

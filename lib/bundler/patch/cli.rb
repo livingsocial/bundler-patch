@@ -1,28 +1,47 @@
 require 'bundler/advise'
-require 'boson/runner'
+require 'slop'
 
 module Bundler::Patch
-  # TODO: Rename to CLI?
-  class Scanner < Boson::Runner
+  class CLI
+    def self.execute
+      opts = Slop.parse do |o|
+        o.banner = "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: #{$0} [options] [gems_to_update]"
+        o.separator ''
+        o.separator 'bundler-patch attempts to update gems conservatively.'
+        o.separator ''
+        o.bool '-m', '--minor_allowed', 'Prefer update to the latest minor.release version.'
+        o.bool '-p', '--prefer_minimal', 'Prefer minimal version updates over most recent release (or minor if -m used).'
+        o.bool '-s', '--strict_updates', 'Restrict any gem to be upgraded past most recent release (or minor if -m used).'
+        o.bool '-l', '--list', 'List vulnerable gems and new version target. No updates will be performed.'
+        o.bool '-v', '--vulnerable_gems_only', 'Only update vulnerable gems.'
+        o.string '-a', '--advisory_db_path', 'Optional custom advisory db path.'
+        o.on('-h', 'Show this help') { show_help(o) }
+        o.on('--help', 'Show long help') { show_man }
+      end
+
+      show_man if opts.arguments.include?('help')
+      options = opts.to_hash
+      options[:gems_to_update] = opts.arguments
+
+      CLI.new.patch(options)
+    end
+
+    def self.show_help(opts)
+      puts opts.to_s(prefix: '  ')
+      exit
+    end
+
+    def self.show_man
+      print File.read(File.expand_path('../../../../man/bundler-patch.txt', __FILE__))
+      exit
+    end
+
     def initialize
       @no_vulns_message = 'No known vulnerabilities to update.'
     end
 
-    option :list, type: :boolean, desc: 'List vulnerable gems and new version target. No updates will be performed.'
-    option :prefer_minimal, type: :boolean, desc: 'Prefer minimal version updates instead of most recent release (or minor if -m used).'
-    option :strict_updates, type: :boolean, desc: 'Do not allow any gem to be upgraded past most recent release (or minor if -m used). Sometimes raises VersionConflict.'
-    option :minor_allowed, type: :boolean, desc: 'Prefer update to the latest minor.release version.'
-    option :advisory_db_path, type: :string, desc: 'Optional custom advisory db path.'
-    option :vulnerable_gems_only, type: :boolean, alias: '-i', desc: 'Only update vulnerable gems.'
-    # TODO: be nice to support array w/o quotes like real `bundle update`
-    option :gems_to_update, type: :array, split: ' ', desc: 'Optional list of gems to update, in quotes, space delimited'
-    # desc 'Scans current directory for known vulnerabilities and attempts to patch your files to fix them.'
-    config default_option: 'gems_to_update'
-
     def patch(options={})
       Bundler.ui = Bundler::UI::Shell.new
-
-      header
 
       return list(options) if options[:list]
 
@@ -30,10 +49,6 @@ module Bundler::Patch
     end
 
     private
-
-    def header
-      Bundler.ui.info "Bundler Patch Version #{Bundler::Patch::VERSION}"
-    end
 
     def conservative_update(gem_patches, options={}, bundler_def=nil)
       prep = DefinitionPrep.new(bundler_def, gem_patches, options).tap { |p| p.prep }
@@ -87,4 +102,8 @@ module Bundler::Patch
       conservative_update(all_gem_patches, options)
     end
   end
+end
+
+if __FILE__ == $0
+  Bundler::Patch::CLI.execute
 end

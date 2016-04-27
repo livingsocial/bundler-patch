@@ -10,7 +10,7 @@ class BundlerFixture
   end
 end
 
-describe Scanner do
+describe CLI do
   before do
     @bf = BundlerFixture.new
     ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
@@ -36,7 +36,7 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.patch(gems_to_update: ['rack'])
+          CLI.new.patch(gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
@@ -54,7 +54,7 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.patch
+          CLI.new.patch
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
@@ -73,7 +73,7 @@ describe Scanner do
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           ENV['DEBUG_PATCH_RESOLVER']= '1'
-          Scanner.new.patch(vulnerable_gems_only: true)
+          CLI.new.patch(vulnerable_gems_only: true)
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
@@ -91,7 +91,7 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.patch(minor_allowed: true, gems_to_update: ['rack'])
+          CLI.new.patch(minor_allowed: true, gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '0.9.1'
@@ -109,7 +109,7 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.patch(strict: true)
+          CLI.new.patch(strict: true)
         end
 
         # only diff here would be if a dependency of rack would otherwise go up a minor
@@ -131,7 +131,7 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.patch(strict: true, gems_to_update: ['rack'])
+          CLI.new.patch(strict: true, gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
@@ -149,7 +149,7 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.patch(strict: true, gems_to_update: ['addressable'])
+          CLI.new.patch(strict: true, gems_to_update: ['addressable'])
         end
 
         lockfile_spec_version('rack').should == '1.4.1'
@@ -180,7 +180,7 @@ describe Scanner do
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           res = with_captured_stdout do
-            Scanner.new.patch(list: true)
+            CLI.new.patch(list: true)
           end
         end
 

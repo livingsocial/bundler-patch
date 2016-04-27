@@ -8,8 +8,7 @@ module Bundler::Patch
       dep = dependency.dep unless dependency.is_a? Gem::Dependency
 
       @conservative_search_for ||= {}
-      #@conservative_search_for[dep] ||= # TODO turning off caching allowed a real-world sample to work, dunno why yet.
-      begin
+      res = @conservative_search_for[dep] ||= begin
         gem_name = dep.name
 
         # An Array per version returned, different entries for different platforms.
@@ -19,19 +18,14 @@ module Bundler::Patch
         (@strict ?
           filter_specs(res, locked_spec) :
           sort_specs(res, locked_spec)).tap do |res|
-          if ENV['DEBUG_PATCH_RESOLVER']
-            begin
-              if res
-                STDERR.puts debug_format_result(dep, res).inspect
-              else
-                STDERR.puts "No res for #{dep.to_s}. Orig res: #{super(dependency)}"
-              end
-            rescue => e
-              STDERR.puts [e.message, e.backtrace[0..5]].inspect
-            end
-          end
+          STDERR.puts debug_format_result(dep, res).inspect if ENV['DEBUG_PATCH_RESOLVER']
         end
       end
+
+      # dup is important, in weird (large) cases Bundler will empty the result array corrupting the cache.
+      # Bundler itself doesn't have this problem because the super search_for does a select on its cached
+      # search results, effectively duping it.
+      res.dup
     end
 
     def debug_format_result(dep, res)

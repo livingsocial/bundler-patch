@@ -32,6 +32,8 @@ module Bundler::Patch
     end
 
     def self.show_man
+      # TODO: use ronn gem like bundler itself to make this for real man page.
+      # TODO: consider just merging this with README - why have two separate?
       Kernel.exec "less '#{File.expand_path('../../../../man/bundler-patch.txt', __FILE__)}'"
       exit
     end

@@ -31,7 +31,7 @@ describe ConservativeResolver do
     end
 
     before do
-      @cr = ConservativeResolver.new(nil, nil, [])
+      @cr = ConservativeResolver.new(nil, {}, [])
       @cr.gems_to_update = GemsToPatch.new(nil)
     end
 
@@ -142,6 +142,26 @@ describe ConservativeResolver do
       it 'new version specified'
 
       it 'new version specified, prefer_minimal'
+    end
+
+    context 'caching search results' do
+      before do
+        bundler_def = @bf.create_definition(
+          gem_dependencies: [@bf.create_dependency('foo')],
+          source_specs: [@bf.create_spec('foo', '2.4.0')], ensure_sources: false, update_gems: 'foo')
+        index = bundler_def.instance_variable_get('@index')
+        @cr = ConservativeResolver.new(index, {}, Bundler::SpecSet.new([]))
+        @cr.locked_specs = {'foo' => [@bf.create_spec('foo', '2.4.0')]}
+        @cr.gems_to_update = GemsToPatch.new([])
+      end
+
+      it 'should dup the output to protect the cache' do
+        # Bundler will (somewhere) do this on occasion during a large resolution. Let's protect against it.
+        dep = Bundler::DepProxy.new(Gem::Dependency.new('foo', '>= 0'), 'ruby')
+        res = @cr.search_for(dep)
+        res.clear
+        @cr.search_for(dep).should_not == []
+      end
     end
   end
 end

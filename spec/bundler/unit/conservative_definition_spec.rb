@@ -1,4 +1,4 @@
-require_relative '../spec_helper'
+require_relative '../../spec_helper'
 
 describe ConservativeDefinition do
   before do
@@ -264,11 +264,8 @@ describe ConservativeDefinition do
 
     it 'should spec out prefer_minimal'
 
-    it 'the caching caused the not-a-conflict job_board json conflict'
-    # needed to get back to this - maybe this was actually the missing remotes problem?
+    it 'needs to pass-through all install or update bundler options' #?
 
-    it 'needs to pass-through all install or update bundler options'
-    # re-designing this as a bundler plugin as the thang here
     it 'needs to cope with frozen setting'
     # see bundler-1.10.6/lib/bundler/installer.rb comments for explanation of frozen
 

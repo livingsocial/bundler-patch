@@ -5,7 +5,7 @@ module Bundler::Patch
   class CLI
     def self.execute
       opts = Slop.parse do |o|
-        o.banner = "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: #{$0} [options] [gems_to_update]"
+        o.banner = "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: bundle patch [options] [gems_to_update]"
         o.separator ''
         o.separator 'bundler-patch attempts to update gems conservatively.'
         o.separator ''

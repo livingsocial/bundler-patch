@@ -1,4 +1,4 @@
-# Bundler::Patch
+# bundler-patch
 
 `bundler-patch` can update your gems conservatively to deal with vulnerable
 gems or just get more current.
@@ -36,12 +36,12 @@ in the Gemfile, and versions 1.0.3, 1.0.4, 1.1.0, 1.1.1, 2.0.0 all exist, the
 default order of preference will be "1.0.4, 1.0.3, 1.0.2, 1.1.1, 1.1.0,
 2.0.0".
 
-"Prefer" means that no available versions are removed from consideration**, to
+"Prefer" means that no available versions are removed from consideration*, to
 help ensure a suitable dependency graph can be reconciled. This does mean some
 gems cannot be upgraded or will be upgraded to unexpected versions.
 
-_**That's a white-lie. bundler-patch will actually remove from consideration
-any versions _older_ than the currently locked version, which `bundle update`
+_*That's a white-lie. bundler-patch will actually remove from consideration
+any versions older than the currently locked version, which `bundle update`
 will not do. It's not common, but it is possible for `bundle update` to
 regress a gem to an older version, if necessary to reconcile the dependency
 graph._
@@ -66,8 +66,8 @@ gems.
     reconcile the dependency graph and could raise a `VersionConflict`.
 
 `bundler-patch` will also check for vulnerabilities based on the
-`ruby-advisory-db`, but also will _modify_ (if necessary) your Gemfile gem
-requirement on vulnerable gems to ensure they can be upgraded.
+`ruby-advisory-db`, but also will _modify_ (if necessary) the gem requirement
+in the Gemfile on vulnerable gems to ensure they can be upgraded.
 
   * `-l/--list` option will just list vulnerable gems. No updates will be
     performed.
@@ -109,7 +109,6 @@ Given the following gem specifications:
 - foo 1.4.5, requires: ~> bar 2.1
 - foo 1.5.0, requires: ~> bar 2.1
 - foo 1.5.1, requires: ~> bar 3.0
-
 - bar with versions 2.0.3, 2.0.4, 2.1.0, 2.1.1, 3.0.0
 
 Gemfile: 

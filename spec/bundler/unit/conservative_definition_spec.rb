@@ -75,9 +75,11 @@ describe ConservativeDefinition do
 
         test_conservative_update('foo', {strict_updates: true, minor_allowed: true}, bundler_def.call)
         lockfile_spec_version('foo').should == '2.4.0'
+        lockfile_spec_version('bar').should == '1.1.3'
 
         test_conservative_update('foo', {strict_updates: false, minor_allowed: true}, bundler_def.call)
         lockfile_spec_version('foo').should == '2.5.0'
+        lockfile_spec_version('bar').should == '2.0.1'
       end
     end
 

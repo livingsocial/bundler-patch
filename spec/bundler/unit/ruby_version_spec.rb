@@ -1,4 +1,4 @@
-require_relative '../spec_helper'
+require_relative '../../spec_helper'
 
 describe RubyVersion do
   before do
@@ -17,7 +17,7 @@ describe RubyVersion do
       fn = File.join(dir, '.ruby-version')
       File.open(fn, 'w') { |f| f.puts old[i] }
 
-      FileUtils.cp File.expand_path('../../fixture/.jenkins.xml', __FILE__), dir
+      FileUtils.cp File.expand_path('../../../fixture/.jenkins.xml', __FILE__), dir
     end
   end
 

@@ -1,4 +1,4 @@
-require_relative '../spec_helper'
+require_relative '../../spec_helper'
 
 class BundlerFixture
   def gemfile_filename
@@ -10,7 +10,7 @@ class BundlerFixture
   end
 end
 
-describe Scanner do
+describe CLI do
   before do
     @bf = BundlerFixture.new
     ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
@@ -25,35 +25,8 @@ describe Scanner do
     @bf.parsed_lockfile_spec(gem_name).version.to_s
   end
 
-  # NOTE: doing complicated real life cases from within specs can still result
-  # in weird results inside Bundler. It can be a nice way to try and debug
-  # a real case, but make sure and keep double checking the same behavior is
-  # occurring outside of RSpec and this tmpdir setup, or you might drive u-self
-  # crayz. The following tests are nice and simple to at least exercise the
-  # basic mechanisms, but are not intended to be comprehensive.
   context 'integration tests' do
-    # you can re-use this case to help troubleshoot, just beware the big comment above.
-    xit 'real case' do
-      @do_not_cleanup = true
-      Dir.chdir(@bf.dir) do
-        %w(Gemfile Gemfile.lock).each do |fn|
-          FileUtils.cp(File.join(File.expand_path(""), fn), File.join(@bf.dir), verbose: true)
-        end
-
-        Bundler.with_clean_env do
-          system 'bundle install --path zz'
-
-          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          ENV['DEBUG_PATCH_RESOLVER'] = '1'
-          ENV['DEBUG_RESOLVER'] = '1'
-          Scanner.new.patch
-        end
-
-        lockfile_spec_version('mail').should == '2.6.0'
-      end
-    end
-
-    it 'conservative update single' do
+    it 'single gem requested with vulnerability' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
@@ -63,7 +36,7 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.update(gems_to_update: ['rack'])
+          CLI.new.patch(gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
@@ -71,7 +44,7 @@ describe Scanner do
       end
     end
 
-    it 'conservative update all' do
+    it 'all gems, one with vulnerability' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
@@ -81,7 +54,7 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.update
+          CLI.new.patch
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
@@ -89,7 +62,26 @@ describe Scanner do
       end
     end
 
-    it 'conservative update one, minor allowed' do
+    it 'all gems, one with vulnerability, -i flag' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          ENV['DEBUG_PATCH_RESOLVER']= '1'
+          CLI.new.patch(vulnerable_gems_only: true)
+        end
+
+        lockfile_spec_version('rack').should == '1.4.7'
+        lockfile_spec_version('addressable').should == '1.0.1'
+      end
+    end
+
+    it 'single gem, minor allowed' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
@@ -99,7 +91,7 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.update(minor_allowed: true, gems_to_update: ['rack'])
+          CLI.new.patch(minor_preferred: true, gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '0.9.1'
@@ -107,7 +99,7 @@ describe Scanner do
       end
     end
 
-    it 'patches one' do
+    it 'all gems, one with vulnerability, strict mode' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
@@ -117,11 +109,51 @@ describe Scanner do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          Scanner.new.patch
+          CLI.new.patch(strict: true)
         end
 
-        lockfile_spec_version('rack').should == '1.4.6'
+        # only diff here would be if a dependency of rack would otherwise go up a minor
+        # or major version. since there is no dependency here, this is the same result
+        # with or without strict flag. this integration test inadequate to demonstrate
+        # the difference.
+        lockfile_spec_version('rack').should == '1.4.7'
+        lockfile_spec_version('addressable').should == '1.0.4'
+      end
+    end
+
+    it 'single gem with vulnerability, strict mode' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          CLI.new.patch(strict: true, gems_to_update: ['rack'])
+        end
+
+        lockfile_spec_version('rack').should == '1.4.7'
         lockfile_spec_version('addressable').should == '1.0.1'
+      end
+    end
+
+    it 'single gem, other with vulnerability, strict mode' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          CLI.new.patch(strict: true, gems_to_update: ['addressable'])
+        end
+
+        lockfile_spec_version('rack').should == '1.4.1'
+        lockfile_spec_version('addressable').should == '1.0.4'
       end
     end
 
@@ -148,7 +180,7 @@ describe Scanner do
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           res = with_captured_stdout do
-            Scanner.new.scan
+            CLI.new.patch(list: true)
           end
         end
 

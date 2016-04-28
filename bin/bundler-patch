@@ -7,4 +7,4 @@ $LOAD_PATH << lib_dir unless $LOAD_PATH.include?(lib_dir)
 
 require 'bundler/patch'
 
-Bundler::Patch::Scanner.start
+Bundler::Patch::CLI.execute

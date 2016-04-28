@@ -16,14 +16,14 @@ Gem::Specification.new do |spec|
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
   spec.bindir        = 'bin'
-  spec.executables   = ['bundle-patch']
+  spec.executables   = ['bundler-patch']
   spec.require_paths = ['lib']
 
   spec.add_dependency 'bundler-advise', '~> 1.0', '>= 1.0.3'
-  spec.add_dependency 'boson'
-  spec.add_dependency 'bundler', '~> 1.10'
+  spec.add_dependency 'slop', '~> 4.0'
+  spec.add_dependency 'bundler', '~> 1.10.0' # TODO: does not work with 1.11.x yet
 
-  spec.add_development_dependency 'bundler-fixture', '~> 1.1'
+  spec.add_development_dependency 'bundler-fixture', '~> 1.3'
   spec.add_development_dependency 'pry'
   spec.add_development_dependency 'rake', '~> 10.0'
   spec.add_development_dependency 'rspec'

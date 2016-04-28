@@ -8,6 +8,8 @@ current version, over the latest minor releases or the latest major releases.
 This is somewhat opposite from `bundle update` which prefers newest/major
 versions first.
 
+Works with Bundler 1.10.x and higher. Last confirmed with 1.12.0.rc.4.
+
 ## Installation
 
     $ gem install bundler-patch

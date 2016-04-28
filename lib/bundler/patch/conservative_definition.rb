@@ -58,29 +58,20 @@ module Bundler::Patch
       @bundler_def.strict = @options[:strict_updates]
       @bundler_def.minor_preferred = @options[:minor_preferred]
       @bundler_def.prefer_minimal = @options[:prefer_minimal]
-      #fixup_empty_remotes # if @gems_to_update.to_bundler_definition === true
+      fixup_empty_remotes if @gems_to_update.to_bundler_definition === true
       @bundler_def
     end
 
-    # This may only matter in cases like sidekiq where the sidekiq-pro gem is served
-    # from their gem server and depends on the open-source sidekiq gem served from
-    # rubygems.org, and when patching those, without the appropriate remotes being
-    # set in rubygems_aggregrate, it won't work.
+    # This came out a real-life case with sidekiq and sidekiq-pro where the sidekiq-pro gem is served from their gem
+    # server and depends on the open-source sidekiq gem served from rubygems.org, and when patching those, without
+    # the appropriate remotes being set in rubygems_aggregrate, it won't work.
     #
-    # I've seen some other weird cases where a remote source index had no entry for a
-    # gem and would trip up bundler-audit. I couldn't pin them down at the time though.
-    # But I want to keep this in case.
-    #
-    # The underlying issue in Bundler 1.10 appears to be when the Definition
-    # constructor receives `true` as the `unlock` parameter, then @locked_sources
-    # is initialized to empty array, and the related rubygems_aggregrate
-    # source instance ends up with no @remotes set in it, which I think happens during
-    # converge_sources. Without those set, then the index will list no gem versions in
-    # some cases. (It was complicated enough to discover this patch, I haven't fully
-    # worked out the flaw, which still could be on my side of the fence).
-    #
-    # Prolly a big lark. Real fix in passing 'update'=>true to Installer? (Though couldn't
-    # I recreate a similar problem with just `bundle update`?)
+    # The underlying issue in Bundler 1.10 appears to be when the Definition constructor receives `true` as the
+    # `unlock` parameter, then @locked_sources is initialized to empty array, and the related rubygems_aggregrate
+    # source instance ends up with no @remotes set in it, which I think happens during converge_sources. Without
+    # those set, then the index will list no gem versions in some cases. (It was complicated enough to discover this
+    # patch, I haven't fully worked out the flaw, though I believe I recreated the problem with plain ol `bundle
+    # update`).
     def fixup_empty_remotes
       STDERR.puts 'fixing empty remotes' if ENV['DEBUG_PATCH_RESOLVER']
       b_sources = @bundler_def.send(:sources)

@@ -2,6 +2,16 @@ module Bundler::Patch
   class ConservativeResolver < Bundler::Resolver
     attr_accessor :locked_specs, :gems_to_update, :strict, :minor_preferred, :prefer_minimal
 
+    def initialize(index, source_requirements, base)
+      # hack for 1.10 and 1.11 support
+      case Bundler::Resolver.instance_method(:initialize).arity
+      when 3
+        super(index, source_requirements, base)
+      when 4
+        super(index, source_requirements, base, nil)
+      end
+    end
+
     def search_for(dependency)
       res = super(dependency)
 

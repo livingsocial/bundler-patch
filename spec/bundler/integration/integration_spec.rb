@@ -31,7 +31,7 @@ describe CLI do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {'rack': nil, addressable: nil},
-                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+                     locks: {'rack': '1.4.1', addressable: '2.1.1'})
         end
 
         Bundler.with_clean_env do
@@ -40,7 +40,7 @@ describe CLI do
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
-        lockfile_spec_version('addressable').should == '1.0.1'
+        lockfile_spec_version('addressable').should == '2.1.1'
       end
     end
 
@@ -49,7 +49,7 @@ describe CLI do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {'rack': nil, addressable: nil},
-                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+                     locks: {'rack': '1.4.1', addressable: '2.1.1'})
         end
 
         Bundler.with_clean_env do
@@ -58,7 +58,7 @@ describe CLI do
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
-        lockfile_spec_version('addressable').should == '1.0.4'
+        lockfile_spec_version('addressable').should == '2.1.2'
       end
     end
 
@@ -67,7 +67,7 @@ describe CLI do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {'rack': nil, addressable: nil},
-                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+                     locks: {'rack': '1.4.1', addressable: '2.1.1'})
         end
 
         Bundler.with_clean_env do
@@ -76,7 +76,7 @@ describe CLI do
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
-        lockfile_spec_version('addressable').should == '1.0.1'
+        lockfile_spec_version('addressable').should == '2.1.1'
       end
     end
 
@@ -85,7 +85,7 @@ describe CLI do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {'rack': nil, addressable: nil},
-                     locks: {'rack': '0.2.0', addressable: '1.0.1'})
+                     locks: {'rack': '0.2.0', addressable: '2.1.1'})
         end
 
         Bundler.with_clean_env do
@@ -94,7 +94,7 @@ describe CLI do
         end
 
         lockfile_spec_version('rack').should == '0.9.1'
-        lockfile_spec_version('addressable').should == '1.0.1'
+        lockfile_spec_version('addressable').should == '2.1.1'
       end
     end
 
@@ -103,7 +103,7 @@ describe CLI do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {'rack': nil, addressable: nil},
-                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+                     locks: {'rack': '1.4.1', addressable: '2.1.1'})
         end
 
         Bundler.with_clean_env do
@@ -116,7 +116,7 @@ describe CLI do
         # with or without strict flag. this integration test inadequate to demonstrate
         # the difference.
         lockfile_spec_version('rack').should == '1.4.7'
-        lockfile_spec_version('addressable').should == '1.0.4'
+        lockfile_spec_version('addressable').should == '2.1.2'
       end
     end
 
@@ -125,7 +125,7 @@ describe CLI do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {'rack': nil, addressable: nil},
-                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+                     locks: {'rack': '1.4.1', addressable: '2.1.1'})
         end
 
         Bundler.with_clean_env do
@@ -134,7 +134,7 @@ describe CLI do
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
-        lockfile_spec_version('addressable').should == '1.0.1'
+        lockfile_spec_version('addressable').should == '2.1.1'
       end
     end
 
@@ -143,7 +143,7 @@ describe CLI do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {'rack': nil, addressable: nil},
-                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+                     locks: {'rack': '1.4.1', addressable: '2.1.1'})
         end
 
         Bundler.with_clean_env do
@@ -152,7 +152,7 @@ describe CLI do
         end
 
         lockfile_spec_version('rack').should == '1.4.1'
-        lockfile_spec_version('addressable').should == '1.0.4'
+        lockfile_spec_version('addressable').should == '2.1.2'
       end
     end
 
@@ -172,7 +172,7 @@ describe CLI do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {'rack': nil, addressable: nil},
-                     locks: {'rack': '1.4.1', addressable: '1.0.1'})
+                     locks: {'rack': '1.4.1', addressable: '2.1.1'})
         end
 
         res = nil

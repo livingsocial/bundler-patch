@@ -91,7 +91,7 @@ describe CLI do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          CLI.new.patch(minor_allowed: true, gems_to_update: ['rack'])
+          CLI.new.patch(minor_preferred: true, gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '0.9.1'

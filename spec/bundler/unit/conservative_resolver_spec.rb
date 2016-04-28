@@ -133,7 +133,7 @@ describe ConservativeResolver do
     context 'sort specs (not strict) (minor allowed)' do
       it 'when unlocking favor next release, then minor increase over current' do
         unlocking
-        @cr.minor_allowed = true
+        @cr.minor_preferred = true
         res = @cr.sort_specs(create_specs('foo', %w(0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1)),
                              locked('foo', '0.2.0'))
         versions(res).should == %w(2.0.0 2.0.1 1.0.0 0.2.0 0.3.0 0.3.1 0.9.0)

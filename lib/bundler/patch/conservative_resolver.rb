@@ -1,6 +1,6 @@
 module Bundler::Patch
   class ConservativeResolver < Bundler::Resolver
-    attr_accessor :locked_specs, :gems_to_update, :strict, :minor_allowed, :prefer_minimal
+    attr_accessor :locked_specs, :gems_to_update, :strict, :minor_preferred, :prefer_minimal
 
     def search_for(dependency)
       res = super(dependency)
@@ -44,7 +44,7 @@ module Bundler::Patch
           gsv = gem_spec.version
           lsv = locked_spec.version
 
-          must_match = @minor_allowed ? [0] : [0, 1]
+          must_match = @minor_preferred ? [0] : [0, 1]
 
           matches = must_match.map { |idx| gsv.segments[idx] == lsv.segments[idx] }
           (matches.uniq == [true]) ? gsv.send(:>=, lsv) : false
@@ -72,7 +72,7 @@ module Bundler::Patch
         case
         when a_ver.segments[0] != b_ver.segments[0]
           b_ver <=> a_ver
-        when !@minor_allowed && (a_ver.segments[1] != b_ver.segments[1])
+        when !@minor_preferred && (a_ver.segments[1] != b_ver.segments[1])
           b_ver <=> a_ver
         when @prefer_minimal && !@gems_to_update.unlocking_gem?(gem_name)
           b_ver <=> a_ver

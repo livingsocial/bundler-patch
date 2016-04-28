@@ -9,7 +9,7 @@ module Bundler::Patch
         o.separator ''
         o.separator 'bundler-patch attempts to update gems conservatively.'
         o.separator ''
-        o.bool '-m', '--minor_allowed', 'Prefer update to the latest minor.release version.' # TODO: change to --minor_preferred
+        o.bool '-m', '--minor_preferred', 'Prefer update to the latest minor.release version.' # TODO: change to --minor_preferred
         o.bool '-p', '--prefer_minimal', 'Prefer minimal version updates over most recent release (or minor if -m used).'
         o.bool '-s', '--strict_updates', 'Restrict any gem to be upgraded past most recent release (or minor if -m used).'
         o.bool '-l', '--list', 'List vulnerable gems and new version target. No updates will be performed.'

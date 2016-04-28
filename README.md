@@ -52,7 +52,7 @@ gems.
 
     $ bundle patch foo bar
 
-  * `-m/--minor_allowed` option will give preference for minor versions over
+  * `-m/--minor_preferred` option will give preference for minor versions over
     release versions.
 
   * `-p/--prefer_minimal` option will reverse the preference order within

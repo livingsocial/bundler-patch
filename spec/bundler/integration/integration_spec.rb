@@ -72,7 +72,6 @@ describe CLI do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          ENV['DEBUG_PATCH_RESOLVER']= '1'
           CLI.new.patch(vulnerable_gems_only: true)
         end
 

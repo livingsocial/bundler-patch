@@ -18,7 +18,7 @@ describe CLI do
 
   after do
     ENV['BUNDLE_GEMFILE'] = nil
-    @bf.clean_up unless @do_not_cleanup
+    @bf.clean_up
   end
 
   def lockfile_spec_version(gem_name)

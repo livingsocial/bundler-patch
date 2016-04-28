@@ -9,17 +9,17 @@ module Bundler::Patch
         o.separator ''
         o.separator 'bundler-patch attempts to update gems conservatively.'
         o.separator ''
-        o.bool '-m', '--minor_allowed', 'Prefer update to the latest minor.release version.'
+        o.bool '-m', '--minor_allowed', 'Prefer update to the latest minor.release version.' # TODO: change to --minor_preferred
         o.bool '-p', '--prefer_minimal', 'Prefer minimal version updates over most recent release (or minor if -m used).'
         o.bool '-s', '--strict_updates', 'Restrict any gem to be upgraded past most recent release (or minor if -m used).'
         o.bool '-l', '--list', 'List vulnerable gems and new version target. No updates will be performed.'
         o.bool '-v', '--vulnerable_gems_only', 'Only update vulnerable gems.'
-        o.string '-a', '--advisory_db_path', 'Optional custom advisory db path.'
+        o.string '-a', '--advisory_db_path', 'Optional custom advisory db path. `gems` dir will be appended to this path.'
         o.on('-h', 'Show this help') { show_help(o) }
-        o.on('--help', 'Show long help') { show_man }
+        o.on('--help', 'Show README.md') { show_readme }
       end
 
-      show_man if opts.arguments.include?('help')
+      show_readme if opts.arguments.include?('help')
       options = opts.to_hash
       options[:gems_to_update] = opts.arguments
 
@@ -31,10 +31,8 @@ module Bundler::Patch
       exit
     end
 
-    def self.show_man
-      # TODO: use ronn gem like bundler itself to make this for real man page.
-      # TODO: consider just merging this with README - why have two separate?
-      Kernel.exec "less '#{File.expand_path('../../../../man/bundler-patch.txt', __FILE__)}'"
+    def self.show_readme
+      Kernel.exec "less '#{File.expand_path('../../../../README.md', __FILE__)}'"
       exit
     end
 

@@ -10,6 +10,8 @@ versions first.
 
 Works with Bundler 1.10.x and higher. Last confirmed with 1.12.0.rc.4.
 
+[![Build Status](https://travis-ci.org/livingsocial/bundler-patch.svg?branch=master)](https://travis-ci.org/livingsocial/bundler-patch)
+
 ## Installation
 
     $ gem install bundler-patch

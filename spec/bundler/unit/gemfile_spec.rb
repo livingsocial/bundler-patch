@@ -37,7 +37,7 @@ describe Gemfile do
   describe 'Gemfile definition' do
     describe 'gem name matching' do
       it 'should not get confused by gems with same ending' do
-        gem_fixture_create(@tmpdir, {rails: '3.2.2', 'jquery-rails': '3.1.3'}) do
+        gem_fixture_create(@tmpdir, {rails: '3.2.2', :'jquery-rails' => '3.1.3'}) do
           s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'rails', patched_versions: ['3.2.22.2'])
           s.update
           File.read('Gemfile').should have_line("gem 'rails', '3.2.22.2'")
@@ -190,7 +190,7 @@ describe Gemfile do
       end
 
       it 'should be okay with whitespace variations' do
-        gem_fixture_create(@tmpdir, {' foo ': ' >   1.2 '}, {' foo ': ' 1.2.5    '}) do
+        gem_fixture_create(@tmpdir, {:' foo ' => ' >   1.2 '}, {:' foo ' => ' 1.2.5    '}) do
           s = Gemfile.new(target_dir: Dir.pwd, gem_name: 'foo', patched_versions: ['1.3.0'])
           s.update
           File.read('Gemfile').should have_line("gem ' foo ', '>= 1.3.0'")

@@ -17,6 +17,8 @@ module Bundler::Patch
 
       dep = dependency.dep unless dependency.is_a? Gem::Dependency
 
+      STDERR.puts "super search_for: #{debug_format_result(dep, res).inspect}" if ENV['DEBUG_RESOLVER']
+
       @conservative_search_for ||= {}
       res = @conservative_search_for[dep] ||= begin
         gem_name = dep.name
@@ -28,7 +30,7 @@ module Bundler::Patch
         (@strict ?
           filter_specs(res, locked_spec) :
           sort_specs(res, locked_spec)).tap do |res|
-          STDERR.puts debug_format_result(dep, res).inspect if ENV['DEBUG_PATCH_RESOLVER']
+          STDERR.puts "after search_for: #{debug_format_result(dep, res).inspect}" if ENV['DEBUG_PATCH_RESOLVER']
         end
       end
 

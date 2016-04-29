@@ -4,30 +4,30 @@ require 'slop'
 module Bundler::Patch
   class CLI
     def self.execute
-      opts = Slop.parse do |o|
-        o.banner = "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: bundle patch [options] [gems_to_update]"
-        o.separator ''
-        o.separator 'bundler-patch attempts to update gems conservatively.'
-        o.separator ''
-        o.bool '-m', '--minor_preferred', 'Prefer update to the latest minor.release version.' # TODO: change to --minor_preferred
-        o.bool '-p', '--prefer_minimal', 'Prefer minimal version updates over most recent release (or minor if -m used).'
-        o.bool '-s', '--strict_updates', 'Restrict any gem to be upgraded past most recent release (or minor if -m used).'
-        o.bool '-l', '--list', 'List vulnerable gems and new version target. No updates will be performed.'
-        o.bool '-v', '--vulnerable_gems_only', 'Only update vulnerable gems.'
-        o.string '-a', '--advisory_db_path', 'Optional custom advisory db path. `gems` dir will be appended to this path.'
-        o.on('-h', 'Show this help') { show_help(o) }
-        o.on('--help', 'Show README.md') { show_readme }
+      opts = Slop.parse! do
+        banner "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: bundle patch [options] [gems_to_update]\n\nbundler-patch attempts to update gems conservatively.\n"
+        on '-m', '--minor_preferred', 'Prefer update to the latest minor.release version.'
+        on '-p', '--prefer_minimal', 'Prefer minimal version updates over most recent release (or minor if -m used).'
+        on '-s', '--strict_updates', 'Restrict any gem to be upgraded past most recent release (or minor if -m used).'
+        on '-l', '--list', 'List vulnerable gems and new version target. No updates will be performed.'
+        on '-v', '--vulnerable_gems_only', 'Only update vulnerable gems.'
+        on '-a=', '--advisory_db_path=', 'Optional custom advisory db path. `gems` dir will be appended to this path.'
+        on '-h', 'Show this help'
+        on '--help', 'Show README.md'
       end
 
-      show_readme if opts.arguments.include?('help')
       options = opts.to_hash
-      options[:gems_to_update] = opts.arguments
+      options[:gems_to_update] = ARGV
+      STDERR.puts options.inspect if ENV['DEBUG']
+
+      show_help(opts) if options[:h]
+      show_readme if ARGV.include?('help') || options[:help]
 
       CLI.new.patch(options)
     end
 
     def self.show_help(opts)
-      puts opts.to_s(prefix: '  ')
+      puts opts
       exit
     end
 

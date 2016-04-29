@@ -1,6 +1,6 @@
 require 'rspec/core/rake_task'
 
-task :default => :unit
+task :default => 'test:unit'
 task :test => 'test:unit'
 
 namespace :test do

@@ -125,31 +125,33 @@ Gemfile.lock:
       bar (~> 2.0)
     bar (2.0.3)
 
-| # | Command Line | Result                    |
-|---|--------------|---------------------------|
-| 1 |              | 'foo 1.4.5', 'bar 2.1.1'  |
-| 2 | foo          | 'foo 1.4.4', 'bar 2.0.3'  |
-| 3 | -m           | 'foo 1.5.1', 'bar 3.0.0'  |
-| 4 | -m -s        | 'foo 1.5.0', 'bar 2.1.1'  |
-| 5 | -s           | 'foo 1.4.4', 'bar 2.0.4'  |
-| 6 | -p           | 'foo 1.4.4', 'bar 2.0.4'  |
-| 7 | -p -m        | 'foo 1.5.0', 'bar 2.1.0'  |
+| # | Command Line              | Result                    |
+|---|---------------------------|---------------------------|
+| 1 | bundle patch              | 'foo 1.4.5', 'bar 2.1.1'  |
+| 2 | bundle patch foo          | 'foo 1.4.4', 'bar 2.0.3'  |
+| 3 | bundle patch -m           | 'foo 1.5.1', 'bar 3.0.0'  |
+| 4 | bundle patch -m -s        | 'foo 1.5.0', 'bar 2.1.1'  |
+| 5 | bundle patch -s           | 'foo 1.4.4', 'bar 2.0.4'  |
+| 6 | bundle patch -p           | 'foo 1.4.4', 'bar 2.0.4'  |
+| 7 | bundle patch -p -m        | 'foo 1.5.0', 'bar 2.1.0'  |
 
-In case 1, `bar` is upgraded to 2.1.0, a minor version increase, because the
+In case 1, `bar` is upgraded to 2.1.1, a minor version increase, because the
 dependency from `foo` 1.4.5 required it.
 
-In case 2, only `foo` is unlocked, so `bar` can only go to 1.4.4 to satisfy
-the dependency from `foo`.
+In case 2, only `foo` is unlocked, so `foo` can only go to 1.4.4 to maintain
+the dependency to `bar`.
 
 In case 3, `bar` goes up a whole major release, because a minor increase is
-preferred now for `foo`.
+preferred now for `foo`, and when it goes to 1.5.1, it requires 3.0.0 of
+`bar`.
 
 In case 4, `foo` is preferred up to a 1.5.x, but 1.5.1 won't work because the
 strict `-s` flag removes `bar` 3.0.0 from consideration since it's a major
 increment.
 
 In case 5, both `foo` and `bar` have any minor or major increments removed
-from consideration, so the most they can move is up to 1.4.4 and 2.0.4.
+from consideration because of the `-s` strict flag, so the most they can
+move is up to 1.4.4 and 2.0.4.
 
 In case 6, the prefer minimal switch `-p` means they only increment to the
 next available release.
@@ -178,8 +180,8 @@ logic to the resolution process to achieve its goals. If there's a bug
 involved, it's almost certainly in the `bundler-patch` code as Bundler has
 been around a long time and has thorough testing and real world experience.
 
-In particular, grep for 'Unwinding for conflict' to isolate some key issues
-that may be preventing the outcome you expect.
+In particular, grep for 'Unwinding for conflict' in the debug output to
+isolate some key issues that may be preventing the outcome you expect.
 
 `bundler-patch` can dump its own debug output, potentially helpful, with
 `DEBUG_PATCH_RESOLVER`.
@@ -187,6 +189,10 @@ that may be preventing the outcome you expect.
 To get additional Bundler debugging output, enable the `DEBUG` env variable.
 This will include all of the details of the downloading the full dependency
 data from remote sources.
+
+At the end of all of this though, the requirements in the Gemfile trump
+anything else, and the most control you have is by modifying those in the
+Gemfile.
 
 
 ## Development

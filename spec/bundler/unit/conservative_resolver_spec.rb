@@ -86,6 +86,13 @@ describe ConservativeResolver do
         versions(res).should == %w(1.8.0 1.7.8 1.7.9)
       end
 
+      it 'when unlocking do proper integer comparison, not string' do
+        unlocking
+        res = @cr.sort_specs(create_specs('foo', %w(1.7.7 1.7.8 1.7.9 1.7.15 1.8.0)),
+                             locked('foo', '1.7.8'))
+        versions(res).should == %w(1.8.0 1.7.8 1.7.9 1.7.15)
+      end
+
       it 'leave current when unlocking but already at latest release' do
         unlocking
         res = @cr.sort_specs(create_specs('foo', %w(1.7.9 1.8.0 2.0.0)),

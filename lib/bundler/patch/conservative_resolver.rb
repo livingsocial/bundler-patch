@@ -17,7 +17,7 @@ module Bundler::Patch
 
       dep = dependency.dep unless dependency.is_a? Gem::Dependency
 
-      STDERR.puts "super search_for: #{debug_format_result(dep, res).inspect}" if ENV['DEBUG_RESOLVER']
+      super_result = "super search_for: #{debug_format_result(dep, res).inspect}"
 
       @conservative_search_for ||= {}
       res = @conservative_search_for[dep] ||= begin
@@ -29,8 +29,11 @@ module Bundler::Patch
 
         (@strict ?
           filter_specs(res, locked_spec) :
-          sort_specs(res, locked_spec)).tap do |res|
-          STDERR.puts "after search_for: #{debug_format_result(dep, res).inspect}" if ENV['DEBUG_PATCH_RESOLVER']
+          sort_specs(res, locked_spec)).tap do |result|
+          if ENV['DEBUG_PATCH_RESOLVER']
+            STDERR.puts super_result
+            STDERR.puts "after search_for: #{debug_format_result(dep, result).inspect}"
+          end
         end
       end
 

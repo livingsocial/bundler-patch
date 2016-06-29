@@ -17,7 +17,8 @@ describe RubyVersion do
       fn = File.join(dir, '.ruby-version')
       File.open(fn, 'w') { |f| f.puts old[i] }
 
-      FileUtils.cp File.expand_path('../../../fixture/.jenkins.xml', __FILE__), dir
+      File.open(File.join(dir, 'Gemfile'), 'w') { |f| f.puts "ruby '#{old[i]}'"}
+      # FileUtils.cp File.expand_path('../../../fixture/.jenkins.xml', __FILE__), dir
     end
   end
 
@@ -33,12 +34,12 @@ describe RubyVersion do
     read_spec_contents(@specs[2], '.ruby-version').should == 'jruby-1.7.16.1'
   end
 
-  it 'should update .jenkins.xml file' do
+  it 'should update Gemfile' do
     @specs.map(&:update)
 
-    read_spec_contents(@specs[0], '.jenkins.xml').should match /#{Regexp.escape('<string>1.9.3-p550</string>')}/
-    read_spec_contents(@specs[1], '.jenkins.xml').should match /#{Regexp.escape('<string>2.1.4</string>')}/
-    read_spec_contents(@specs[2], '.jenkins.xml').should match /#{Regexp.escape('<string>jruby-1.7.16.1</string>')}/
+    read_spec_contents(@specs[0], 'Gemfile').should == "ruby '1.9.3-p550'"
+    read_spec_contents(@specs[1], 'Gemfile').should == "ruby '2.1.4'"
+    read_spec_contents(@specs[2], 'Gemfile').should == "ruby 'jruby-1.7.16.1'"
   end
 
   def read_spec_contents(spec, filename)

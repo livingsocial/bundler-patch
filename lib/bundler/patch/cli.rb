@@ -12,6 +12,7 @@ module Bundler::Patch
         on '-l', '--list', 'List vulnerable gems and new version target. No updates will be performed.'
         on '-v', '--vulnerable_gems_only', 'Only update vulnerable gems.'
         on '-a=', '--advisory_db_path=', 'Optional custom advisory db path. `gems` dir will be appended to this path.'
+        on '-r', '--ruby', 'Update Ruby version in related files.'
         on '-h', 'Show this help'
         on '--help', 'Show README.md'
       end

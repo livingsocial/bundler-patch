@@ -3,7 +3,7 @@ module Bundler::Patch
     def self.files
       {
         '.ruby-version' => [/.*/],
-        '.jenkins.xml' => [/\<string\>(.*)\<\/string\>/, /rvm.*\>ruby-(.*)@/, /version.*rbenv.*\>(.*)\</]
+        'Gemfile' => [/ruby\s+["'](.*)['"]/]
       }
     end
 

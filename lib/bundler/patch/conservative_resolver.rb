@@ -3,12 +3,13 @@ module Bundler::Patch
     attr_accessor :locked_specs, :gems_to_update, :strict, :minor_preferred, :prefer_minimal
 
     def initialize(index, source_requirements, base)
-      # hack for 1.10 and 1.11+ support
       case Bundler::Resolver.instance_method(:initialize).arity
-      when 3
+      when 3 # 1.10
         super(index, source_requirements, base)
-      when 4
+      when 4 # 1.11 1.12
         super(index, source_requirements, base, nil)
+      when 5 # 1.13
+        super(index, source_requirements, base, nil, Bundler::GemVersionPromoter.new)
       end
     end
 

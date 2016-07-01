@@ -1,20 +1,14 @@
 module Bundler::Patch
-  class ConservativeResolver < Bundler::Resolver
+  class ConservativeResolverV1_13 < Bundler::Resolver
     attr_accessor :locked_specs, :gems_to_update, :strict, :minor_preferred, :prefer_minimal
 
-    def initialize(index, source_requirements, base)
-      case Bundler::Resolver.instance_method(:initialize).arity
-      when 3 # 1.10
-        super(index, source_requirements, base)
-      when 4 # 1.11 1.12
-        super(index, source_requirements, base, nil)
-      when 5 # 1.13
-        super(index, source_requirements, base, nil, Bundler::GemVersionPromoter.new)
-      end
+    def initialize(index, source_requirements, base, gem_version_promoter)
+      super(index, source_requirements, base, nil, gem_version_promoter)
     end
 
     def search_for(dependency)
-      res = super(dependency)
+      return super(dependency)
+      # res = super(dependency)
 
       dep = dependency.dep unless dependency.is_a? Gem::Dependency
 
@@ -42,12 +36,6 @@ module Bundler::Patch
       # Bundler itself doesn't have this problem because the super search_for does a select on its cached
       # search results, effectively duping it.
       res.dup
-    end
-
-    def debug_format_result(dep, res)
-      a = [dep.to_s,
-           res.map { |sg| [sg.version, sg.dependencies_for_activated_platforms.map { |dp| [dp.name, dp.requirement.to_s] }] }]
-      [a.first, a.last.map { |sg_data| [sg_data.first.version, sg_data.last.map { |aa| aa.join(' ') }] }]
     end
 
     def filter_specs(specs, locked_spec)

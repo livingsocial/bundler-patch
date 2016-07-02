@@ -138,6 +138,41 @@ describe CLI do
       end
     end
 
+    it 'single gem with vulnerability, minimal mode' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'rack': nil, addressable: nil},
+                     locks: {'rack': '1.4.1', addressable: '2.1.1'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          CLI.new.patch(prefer_minimal: true, gems_to_update: ['rack'])
+        end
+
+        lockfile_spec_version('rack').should == '1.4.6'
+        lockfile_spec_version('addressable').should == '2.1.1'
+      end
+    end
+
+    it 'single gem with vulnerability, requiring minor upgrade' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'bson': nil},
+                     locks: {'bson': '1.11.0'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          CLI.new.patch(gems_to_update: ['bson'])
+        end
+
+        lockfile_spec_version('bson').should == '1.12.5'
+      end
+    end
+
     it 'single gem, other with vulnerability, strict mode' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|

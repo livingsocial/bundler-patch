@@ -2,8 +2,8 @@ require_relative '../../spec_helper'
 
 describe ConservativeResolverV1_12 do
   before do
-    skip 'Testing against Bundler >= 1.13' if bundler_1_13?
     @bf = BundlerFixture.new
+    skip 'Testing against Bundler >= 1.13' if bundler_1_13?
   end
 
   after do

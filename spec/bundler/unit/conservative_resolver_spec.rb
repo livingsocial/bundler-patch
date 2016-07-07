@@ -1,6 +1,6 @@
 require_relative '../../spec_helper'
 
-describe ConservativeResolverV1_12 do
+describe ConservativeResolver do
   before do
     @bf = BundlerFixture.new
     skip 'Testing against Bundler >= 1.13' if bundler_1_13?
@@ -32,7 +32,7 @@ describe ConservativeResolverV1_12 do
     end
 
     before do
-      @cr = ConservativeResolverV1_12.new(nil, {}, [])
+      @cr = ConservativeResolver.new(nil, {}, [])
       @cr.gems_to_update = GemsToPatch.new(nil)
     end
 
@@ -158,7 +158,7 @@ describe ConservativeResolverV1_12 do
           gem_dependencies: [@bf.create_dependency('foo')],
           source_specs: [@bf.create_spec('foo', '2.4.0')], ensure_sources: false, update_gems: 'foo')
         index = bundler_def.instance_variable_get('@index')
-        @cr = ConservativeResolverV1_12.new(index, {}, Bundler::SpecSet.new([]))
+        @cr = ConservativeResolver.new(index, {}, Bundler::SpecSet.new([]))
         @cr.locked_specs = {'foo' => [@bf.create_spec('foo', '2.4.0')]}
         @cr.gems_to_update = GemsToPatch.new([])
       end

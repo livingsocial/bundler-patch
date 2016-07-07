@@ -17,13 +17,14 @@ module Bundler::Patch
           # Run a resolve against the locally available gems
           base = last_resolve.is_a?(Bundler::SpecSet) ? Bundler::SpecSet.new(last_resolve) : []
           if Gem::Version.new(Bundler::VERSION) >= Gem::Version.new('1.13.0.cu.1')  # TODO: change to just 1.13.0 once released
-            @gem_version_promoter.tap do |gvp|
-              gvp.level = @minor_preferred ? :minor : :patch
-              gvp.strict = @strict
-            end
-            resolver = ConservativeResolverV1_13.new(index, source_requirements, base, @gem_version_promoter)
+            gvpp = Bundler::Patch::GemVersionPatchPromoter.new(@gem_version_promoter.locked_specs, @gem_version_promoter.unlock_gems)
+            gvpp.level = @minor_preferred ? :minor : :patch
+            gvpp.strict = @strict
+            gvpp.minimal = @prefer_minimal
+            gvpp.gems_to_update = @gems_to_update
+            resolver = Bundler::Resolver.new(index, source_requirements, base, nil, gvpp)
           else
-            resolver = ConservativeResolverV1_12.new(index, source_requirements, base)
+            resolver = ConservativeResolver.new(index, source_requirements, base)
             locked_specs = if @unlocking && @locked_specs.length == 0
                              # Have to grab these again. Default behavior is to not store any
                              # locked_specs if updating all gems, because behavior is the same

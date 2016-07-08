@@ -8,7 +8,9 @@ current version, over the latest minor releases or the latest major releases.
 This is somewhat opposite from `bundle update` which prefers newest/major
 versions first.
 
-Works with Bundler 1.10.x and higher.
+Works with Bundler 1.10.x and higher. Starting with Bundler 1.13, much of the
+core behavior in `bundler-patch` has been ported to Bundler itself. See [this article](https://TODO) for ##### TO DO ######
+more information.
 
 [![Build Status](https://travis-ci.org/livingsocial/bundler-patch.svg?branch=master)](https://travis-ci.org/livingsocial/bundler-patch)
 
@@ -48,7 +50,7 @@ _*That's a white-lie. bundler-patch will actually remove from consideration
 any versions older than the currently locked version, which `bundle update`
 will not do. It's not common, but it is possible for `bundle update` to
 regress a gem to an older version, if necessary to reconcile the dependency
-graph._
+graph._                             ## TO DO ## REMOVE THIS
 
 With no gem names provided on the command line, all gems will be unlocked and
 open for updating. A list of gem names can be passed to restrict to just those
@@ -84,7 +86,7 @@ in the Gemfile on vulnerable gems to ensure they can be upgraded.
 The rules for updating vulnerable gems are almost identical to the general
 `bundler-patch` behavior described above, and abide by the same options (`-m`,
 `-p`, and `-s`) though there are some tweaks to encourage getting to at least
-a patched version of the gem. Keep in mind Bundler may choose unexpected
+a patched version of the gem. Keep in mind Bundler may still choose unexpected
 versions in order to satisfy the dependency graph.
 
    * `-v/--vulnerable_gems_only` option will automatically restrict the gems
@@ -170,29 +172,40 @@ gems should or shouldn't be upgraded. This can quickly get complicated as even
 a small dependency tree can involve many moving parts, and Bundler works hard
 to find a combination that satisfies all of the dependencies and requirements.
 
+NOTE: the requirements in the Gemfile trump anything else. The most control
+you have is by modifying those in the Gemfile, in some circumstances it may be
+better to pin your versions to what you need instead of trying to diagnose why
+Bundler isn't calculating the versions you expect with a broader requirement.
+If there is an incompatibility, pinning to desired versions can also aide in
+debugging dependency conflicts.
+
 You can get a (very verbose) look into how Bundler's resolution algorithm is
 working by setting the `DEBUG_RESOLVER` environment variable. While it can be
 tricky to dig through, it should explain how it came to the conclusions it
 came to.
+
+In particular, grep for 'Unwinding for conflict' in the debug output to
+isolate some key issues that may be preventing the outcome you expect.
 
 Adding to the usual Bundler complexity, `bundler-patch` is injecting its own
 logic to the resolution process to achieve its goals. If there's a bug
 involved, it's almost certainly in the `bundler-patch` code as Bundler has
 been around a long time and has thorough testing and real world experience.
 
-In particular, grep for 'Unwinding for conflict' in the debug output to
-isolate some key issues that may be preventing the outcome you expect.
+When used with versions of Bundler prior to 1.13, `bundler-patch` can dump
+its own debug output, potentially helpful, with `DEBUG_PATCH_RESOLVER`.
 
-`bundler-patch` can dump its own debug output, potentially helpful, with
-`DEBUG_PATCH_RESOLVER`.
+(When used with version 1.13+ of Bundler, `bundler-patch` only adds some
+additional sorting behavior, the result of which will be included in the
+`DEBUG_RESOLVER` output and `DEBUG_PATCH_RESOLVER` is not used).
 
 To get additional Bundler debugging output, enable the `DEBUG` env variable.
 This will include all of the details of the downloading the full dependency
 data from remote sources.
 
-At the end of all of this though, the requirements in the Gemfile trump
-anything else, and the most control you have is by modifying those in the
-Gemfile.
+At the end of all of this though, again, the requirements in the Gemfile
+trump anything else, and the most control you have is by modifying those
+in the Gemfile.
 
 
 ## Development

@@ -156,7 +156,7 @@ describe CLI do
       end
     end
 
-    it 'single gem with vulnerability, requiring minor upgrade' do
+    it 'single gem with vulnerability, requiring minor upgrade non-minimal' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
@@ -170,6 +170,23 @@ describe CLI do
         end
 
         lockfile_spec_version('bson').should == '1.12.5'
+      end
+    end
+
+    it 'single gem with vulnerability, requiring minor upgrade minimal' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {'bson': nil},
+                     locks: {'bson': '1.11.0'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          CLI.new.patch(prefer_minimal: true, gems_to_update: ['bson'])
+        end
+
+        lockfile_spec_version('bson').should == '1.12.3'
       end
     end
 

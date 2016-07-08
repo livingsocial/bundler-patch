@@ -17,6 +17,8 @@ module Bundler::Patch
           # Run a resolve against the locally available gems
           base = last_resolve.is_a?(Bundler::SpecSet) ? Bundler::SpecSet.new(last_resolve) : []
           if Gem::Version.new(Bundler::VERSION) >= Gem::Version.new('1.13.0.cu.1')  # TODO: change to just 1.13.0 once released
+            require 'bundler/patch/gem_version_patch_promoter'
+
             gvpp = Bundler::Patch::GemVersionPatchPromoter.new(@gem_version_promoter.locked_specs, @gem_version_promoter.unlock_gems)
             gvpp.level = @minor_preferred ? :minor : :patch
             gvpp.strict = @strict

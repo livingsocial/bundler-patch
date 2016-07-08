@@ -142,8 +142,8 @@ describe CLI do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
-                     gems: {'rack': nil, addressable: nil},
-                     locks: {'rack': '1.4.1', addressable: '2.1.1'})
+                     gems: {rack: nil, addressable: nil},
+                     locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
         Bundler.with_clean_env do
@@ -160,8 +160,8 @@ describe CLI do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
-                     gems: {'bson': nil},
-                     locks: {'bson': '1.11.0'})
+                     gems: {bson: nil},
+                     locks: {bson: '1.11.0'})
         end
 
         Bundler.with_clean_env do
@@ -177,8 +177,8 @@ describe CLI do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
-                     gems: {'bson': nil},
-                     locks: {'bson': '1.11.0'})
+                     gems: {bson: nil},
+                     locks: {bson: '1.11.0'})
         end
 
         Bundler.with_clean_env do

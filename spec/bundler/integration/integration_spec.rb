@@ -26,7 +26,7 @@ describe CLI do
   end
 
   context 'integration tests' do
-    it 'single gem requested with vulnerability' do
+    it 'single gem with vulnerability' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
@@ -62,7 +62,7 @@ describe CLI do
       end
     end
 
-    it 'all gems, one with vulnerability, -i flag' do
+    it 'all gems, one with vulnerability, -v flag' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
@@ -161,7 +161,7 @@ describe CLI do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {bson: nil},
-                     locks: {bson: '1.11.0'})
+                     locks: {bson: '1.11.1'})
         end
 
         Bundler.with_clean_env do
@@ -169,7 +169,7 @@ describe CLI do
           CLI.new.patch(gems_to_update: ['bson'])
         end
 
-        lockfile_spec_version('bson').should == '1.12.5'
+        lockfile_spec_version('bson').should == '1.12.3'
       end
     end
 
@@ -178,7 +178,7 @@ describe CLI do
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {bson: nil},
-                     locks: {bson: '1.11.0'})
+                     locks: {bson: '1.11.1'})
         end
 
         Bundler.with_clean_env do

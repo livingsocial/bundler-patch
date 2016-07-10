@@ -29,6 +29,8 @@ module Bundler::Patch
           b_ver <=> a_ver
         when @minimal && @gems_to_update.unlocking_gem?(gem_name) && one_version_matches(new_version, a_ver, b_ver)
           sort_matching_to_end(new_version, a_ver, b_ver)
+        when new_version && @gems_to_update.unlocking_gem?(gem_name) && one_version_matches(new_version, a_ver, b_ver)
+          sort_matching_to_end(new_version, a_ver, b_ver)
         else
           a_index <=> b_index # no change in current ordering
         end
@@ -39,22 +41,8 @@ module Bundler::Patch
       !one_version_matches(match_version, a_ver, b_ver)
     end
 
-    def one_version_matches(match_version, a_ver, b_ver)
-      [a_ver, b_ver].include?(match_version)
-    end
-
     def both_versions_gt_or_equal_to_version(version, a_ver, b_ver)
       version && a_ver >= version && b_ver >= version
-    end
-
-    def sort_matching_to_end(version, a_ver, b_ver)
-      if a_ver == version
-        1
-      elsif b_ver == version
-        -1
-      else
-        raise "Neither version (#{a_ver} or #{b_ver}) matches #{version}"
-      end
     end
   end
 end

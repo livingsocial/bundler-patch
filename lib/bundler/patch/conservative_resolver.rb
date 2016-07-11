@@ -4,7 +4,7 @@ module Bundler::Patch
 
     def initialize(index, source_requirements, base)
       case Bundler::Resolver.instance_method(:initialize).arity
-      when 3 # 1.10
+      when 3 # 1.9 1.10
         super(index, source_requirements, base)
       when 4 # 1.11 1.12
         super(index, source_requirements, base, nil)
@@ -84,6 +84,7 @@ module Bundler::Patch
       filtered.sort do |a, b|
         @a_ver = a.first.version
         @b_ver = b.first.version
+        STDERR.puts "Comparing #{@a_ver} to #{@b_ver}" if ENV['DEBUG_PATCH_RESOLVER']
         case
         when segments_do_not_match(:major)
           @b_ver <=> @a_ver

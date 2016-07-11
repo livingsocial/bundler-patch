@@ -19,9 +19,9 @@ Gem::Specification.new do |spec|
   spec.executables   = ['bundler-patch']
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'bundler-advise', '~> 1.0', '>= 1.0.3'
+  spec.add_dependency 'bundler-advise', '~> 1.1', '>= 1.1.2'
   spec.add_dependency 'slop', '~> 3.0'
-  spec.add_dependency 'bundler', '~> 1.10'
+  spec.add_dependency 'bundler', '~> 1.7'
 
   spec.add_development_dependency 'bundler-fixture', '~> 1.3'
   spec.add_development_dependency 'pry'

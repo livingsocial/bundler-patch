@@ -8,7 +8,7 @@ current version, over the latest minor releases or the latest major releases.
 This is somewhat opposite from `bundle update` which prefers newest/major
 versions first.
 
-Works with Bundler 1.10.x and higher. Starting with Bundler 1.13, much of the
+Works with Bundler 1.9 and higher. Starting with Bundler 1.13, much of the
 core behavior in `bundler-patch` has been ported to Bundler itself. See [this article](https://TODO) for ##### TO DO ######
 more information.
 

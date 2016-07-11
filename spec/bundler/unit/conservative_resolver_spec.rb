@@ -110,6 +110,15 @@ describe ConservativeResolver do
         versions(res).should == %w(3.1.0 3.0.0 3.0.1 2.1.0 2.0.0 1.8.0 1.7.5 1.7.7 1.7.8 1.7.9)
       end
 
+      it 'when new_version specified up a minor rev without prefer minor, update to new_version' do
+        # new_version can be specified when gem is vulnerable
+        @cr.gems_to_update = GemsToPatch.new(GemPatch.new(gem_name: 'foo', new_version: '1.8.1'))
+        versions = %w(1.7.5 1.7.7 1.7.8 1.7.9 1.8.0 1.8.1 1.8.2 2.0.0 2.1.0 3.0.0)
+        res = @cr.sort_specs(create_specs('foo', versions),
+                             locked('foo', '1.7.5'))
+        versions(res).should == %w(3.0.0 2.1.0 2.0.0 1.8.0 1.8.2 1.7.5 1.7.7 1.7.8 1.7.9 1.8.1)
+      end
+
       it 'when new_version specified, with prefer minimal, make sure to at least get to new_version' do
         @cr.gems_to_update = GemsToPatch.new(GemPatch.new(gem_name: 'foo', new_version: '1.7.7'))
         @cr.prefer_minimal = true

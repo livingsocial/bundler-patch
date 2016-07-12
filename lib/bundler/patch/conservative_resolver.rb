@@ -74,40 +74,46 @@ module Bundler::Patch
     def sort_specs(specs, locked_spec)
       return specs unless locked_spec
       @gem_name = locked_spec.name
-      locked_version = locked_spec.version
+      @locked_version = locked_spec.version
 
-      filtered = specs.select { |s| s.first.version >= locked_version }
+      filtered = specs.select { |s| s.first.version >= @locked_version }
 
       @gem_patch = @gems_to_update.gem_patch_for(@gem_name)
-      new_version = @gem_patch ? @gem_patch.new_version : nil
+      @new_version = @gem_patch ? @gem_patch.new_version : nil
 
-      filtered.sort do |a, b|
+      result = filtered.sort do |a, b|
         @a_ver = a.first.version
         @b_ver = b.first.version
-        STDERR.puts "Comparing #{@a_ver} to #{@b_ver}" if ENV['DEBUG_PATCH_RESOLVER']
         case
         when segments_do_not_match(:major)
           @b_ver <=> @a_ver
         when !@minor_preferred && segments_do_not_match(:minor)
-          if new_version && unlocking_gem? && one_version_matches(new_version)
-            sort_matching_to_end(new_version)
-          else
-            @b_ver <=> @a_ver
-          end
+          @b_ver <=> @a_ver
         when @prefer_minimal && !unlocking_gem?
           @b_ver <=> @a_ver
         when @prefer_minimal && unlocking_gem? &&
-          (neither_version_matches(locked_version) &&
-            (!new_version || both_versions_gt_or_equal_to_version(new_version)))
+          (neither_version_matches(@locked_version) &&
+            (!@new_version || both_versions_gt_or_equal_to_version(@new_version)))
           @b_ver <=> @a_ver
-        when !unlocking_gem? && one_version_matches(locked_version)
-          sort_matching_to_end(locked_version)
-        when @prefer_minimal && unlocking_gem? && one_version_matches(new_version)
-          sort_matching_to_end(new_version)
         else
           @a_ver <=> @b_ver
         end
       end
+      post_sort(result)
+    end
+
+    def post_sort(result)
+      unless unlocking_gem?
+        result = move_version_to_end(result, @locked_version)
+      end
+
+      if @new_version && unlocking_gem? && segments_match(:major, @new_version, @locked_version)
+        if @prefer_minimal || (!@prefer_minimal && (result.last.first.version < @new_version))
+          result = move_version_to_end(result, @new_version)
+        end
+      end
+
+      result
     end
 
     def unlocking_gem?
@@ -118,9 +124,13 @@ module Bundler::Patch
       @a_ver < locked_version || @b_ver < locked_version
     end
 
-    def segments_do_not_match(level)
+    def segments_match(level, a_ver=@a_ver, b_ver=@b_ver)
+      !segments_do_not_match(level, a_ver, b_ver)
+    end
+
+    def segments_do_not_match(level, a_ver=@a_ver, b_ver=@b_ver)
       index = [:major, :minor].index(level)
-      @a_ver.segments[index] != @b_ver.segments[index]
+      a_ver.segments[index] != b_ver.segments[index]
     end
 
     def neither_version_matches(match_version)
@@ -135,24 +145,9 @@ module Bundler::Patch
       version && @a_ver >= version && @b_ver >= version
     end
 
-    def sort_matching_to_end(version)
-      if @a_ver == version
-        1
-      elsif @b_ver == version
-        -1
-      else
-        # should never happen, prevents coding error when not using
-        # one_version_matches prior to calling this method
-        raise "Neither version (#{@a_ver} or #{@b_ver}) matches #{version}"
-      end
-    end
-
-    def move_version_to_end(specs, version, result)
-      spec_group = specs.detect { |s| s.first.version.to_s == version.to_s }
-      if spec_group
-        result.reject! { |s| s.first.version.to_s === version.to_s }
-        result << spec_group
-      end
+    def move_version_to_end(result, version)
+      move, keep = result.partition { |s| s.first.version.to_s == version.to_s }
+      keep.concat(move)
     end
   end
 end

@@ -165,7 +165,6 @@ describe CLI do
         end
 
         Bundler.with_clean_env do
-          ENV['DEBUG_PATCH_RESOLVER'] = '1'
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(gems_to_update: ['bson'])
         end

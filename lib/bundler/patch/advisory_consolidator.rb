@@ -11,7 +11,7 @@ module Bundler::Patch
     def vulnerable_gems
       @all_ads.map do |ads|
         ads.update if ads.repo
-        Bundler::Advise::GemAdviser.new(advisories: ads).scan_lockfile
+        File.exist?(Bundler.default_lockfile) ? Bundler::Advise::GemAdviser.new(advisories: ads).scan_lockfile : []
       end.flatten.map do |advisory|
         patched = advisory.patched_versions.map do |pv|
           # this is a little stupid for compound requirements, but works itself out in consolidate_gemfiles
@@ -27,7 +27,8 @@ module Bundler::Patch
 
     def patch_gemfile_and_get_gem_specs_to_patch
       gem_update_specs = vulnerable_gems
-      locked = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile)).specs
+      locked = File.exist?(Bundler.default_lockfile) ?
+        Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile)).specs : []
 
       gem_update_specs.map(&:update) # modify requirements in Gemfile if necessary
 

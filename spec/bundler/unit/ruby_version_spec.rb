@@ -2,9 +2,16 @@ require_relative '../../spec_helper'
 
 describe RubyVersion do
   before do
+    setup_subject %w(1.9.3-p550 2.1.4 ruby-2.1.4-p265 jruby-1.7.16.1)
+  end
+
+  after do
+    FileUtils.rmtree(File.join(File.dirname(__FILE__), 'fixture'))
+  end
+
+  def setup_subject(patched_versions=nil)
     dirs = %w(./fixture/bar ./fixture/foo ./fixture/java)
     old = %w(1.9.3-p484 2.1.2 jruby-1.7.16)
-    patched_versions = %w(1.9.3-p550 2.1.4 ruby-2.1.4-p265 jruby-1.7.16.1)
 
     @specs = dirs.map do |dir|
       Bundler::Patch::RubyVersion.new(target_dir: File.join(File.dirname(__FILE__), dir),
@@ -20,10 +27,6 @@ describe RubyVersion do
       File.open(File.join(dir, 'Gemfile'), 'w') { |f| f.puts "ruby '#{old[i]}'"}
       # FileUtils.cp File.expand_path('../../../fixture/.jenkins.xml', __FILE__), dir
     end
-  end
-
-  after do
-    FileUtils.rmtree(File.join(File.dirname(__FILE__), 'fixture'))
   end
 
   it 'should update ruby version files in different dirs' do

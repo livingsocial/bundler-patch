@@ -13,6 +13,7 @@ module Bundler::Patch
         on '-v', '--vulnerable_gems_only', 'Only update vulnerable gems.'
         on '-a=', '--advisory_db_path=', 'Optional custom advisory db path. `gems` dir will be appended to this path.'
         on '-r', '--ruby', 'Update Ruby version in related files.'
+        on '--rubies=', 'Supported Ruby versions. Comma delimited or multiple switches.', as: Array, delimiter: ','
         on '-h', 'Show this help'
         on '--help', 'Show README.md'
       end
@@ -46,19 +47,12 @@ module Bundler::Patch
 
       return list(options) if options[:list]
 
-      _patch(options)
+      patch_ruby(options[:rubies]) if options[:ruby]
+
+      patch_gems(options)
     end
 
     private
-
-    def conservative_update(gem_patches, options={}, bundler_def=nil)
-      prep = DefinitionPrep.new(bundler_def, gem_patches, options).tap { |p| p.prep }
-
-      # update => true is very important, otherwise without any Gemfile changes, the installer
-      # may end up concluding everything can be resolved locally, nothing is changing,
-      # and then nothing is done. lib/bundler/cli/update.rb also hard-codes this.
-      Bundler::Installer.install(Bundler.root, prep.bundler_def, {'update' => true})
-    end
 
     def list(options)
       gem_patches = AdvisoryConsolidator.new(options).vulnerable_gems
@@ -73,7 +67,11 @@ module Bundler::Patch
       end
     end
 
-    def _patch(options)
+    def patch_ruby(supported)
+      RubyVersion.new(patched_versions: supported).update
+    end
+
+    def patch_gems(options)
       vulnerable_patches = AdvisoryConsolidator.new(options).patch_gemfile_and_get_gem_specs_to_patch
       requested_patches = (options.delete(:gems_to_update) || []).map { |gem_name| GemPatch.new(gem_name: gem_name) }
 
@@ -104,6 +102,15 @@ module Bundler::Patch
         Bundler.ui.info "Updating '#{all_gem_patches.map(&:gem_name).join(' ')}' conservatively."
       end
       conservative_update(all_gem_patches, options)
+    end
+
+    def conservative_update(gem_patches, options={}, bundler_def=nil)
+      prep = DefinitionPrep.new(bundler_def, gem_patches, options).tap { |p| p.prep }
+
+      # update => true is very important, otherwise without any Gemfile changes, the installer
+      # may end up concluding everything can be resolved locally, nothing is changing,
+      # and then nothing is done. lib/bundler/cli/update.rb also hard-codes this.
+      Bundler::Installer.install(Bundler.root, prep.bundler_def, {'update' => true})
     end
   end
 end

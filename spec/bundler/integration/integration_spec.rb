@@ -187,5 +187,25 @@ describe CLI do
         res.should =~ /#{Regexp.escape('rack ["1.6.2", "1.5.4", "1.4.6", "1.1.6", "1.2.8", "1.3.9"]')}/
       end
     end
+
+    it 'allows optional config of ruby-advisory-db' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {rack: nil, addressable: nil},
+                     locks: {rack: '1.4.1', addressable: '2.1.1'})
+        end
+
+        target_dir = File.join(@bf.dir, '.foobar')
+        File.exist?(File.join(target_dir, 'gems')).should eq false
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          CLI.new.patch(gems_to_update: ['rack'], ruby_advisory_db_path: target_dir)
+        end
+
+        File.exist?(File.join(target_dir, 'gems')).should eq true
+      end
+    end
   end
 end

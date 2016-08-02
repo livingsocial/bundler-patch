@@ -3,7 +3,13 @@ module Bundler::Patch
     def initialize(options={}, all_ads=nil)
       @options = options
       @all_ads = all_ads || [].tap do |a|
-        a << Bundler::Advise::Advisories.new unless options[:skip_bundler_advise]
+        unless options[:skip_bundler_advise]
+          if options[:ruby_advisory_db_path]
+            a << Bundler::Advise::Advisories.new(dir: options[:ruby_advisory_db_path])
+          else
+            a << Bundler::Advise::Advisories.new # annoying
+          end
+        end
         a << Bundler::Advise::Advisories.new(dir: options[:advisory_db_path], repo: nil) if options[:advisory_db_path]
       end
     end

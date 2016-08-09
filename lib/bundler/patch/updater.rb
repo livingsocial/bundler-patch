@@ -17,14 +17,7 @@ module Bundler::Patch
     end
 
     def calc_new_version(old_version)
-      old = old_version
-      all = @patched_versions.dup
-      return old_version if all.include?(old)
-
-      all << old
-      all.sort!
-      all.delete_if { |v| v.split(/\./).first != old.split(/\./).first } # strip non-matching major revs
-      all[all.index(old) + 1]
+      NewVersionCalculator.new(old_version, @patched_versions.dup).run
     end
 
     def file_replace

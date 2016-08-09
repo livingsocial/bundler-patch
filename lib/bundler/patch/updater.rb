@@ -17,7 +17,7 @@ module Bundler::Patch
     end
 
     def calc_new_version(old_version)
-      NewVersionCalculator.new(old_version, @patched_versions.dup).run
+      NewVersionCalculator.new(old_version, @patched_versions).run
     end
 
     def file_replace

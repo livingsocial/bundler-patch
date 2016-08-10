@@ -71,15 +71,3 @@ module Bundler::Patch
     end
   end
 end
-
-# def prep_git_checkout(spec)
-#   Dir.chdir(spec.target_dir) do
-#     status_first_line = `git status`.split("\n").first
-#     raise "Not on master: #{status_first_line}" unless status_first_line == '# On branch master'
-#
-#     raise 'Uncommitted files' unless `git status --porcelain`.chomp.empty?
-#
-#     verbose_puts `git pull`
-#   end
-# end
-

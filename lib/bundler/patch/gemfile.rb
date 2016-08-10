@@ -78,7 +78,7 @@ module Bundler::Patch
 
     def requirements_args_regexp
       ops = Gem::Requirement::OPS.keys.join "|"
-      re = /(\s*['\"]\s*(#{ops})?\s*#{Gem::Version::VERSION_PATTERN}\s*['"],*)+/
+      /(\s*['\"]\s*(#{ops})?\s*#{Gem::Version::VERSION_PATTERN}\s*['"],*)+/
     end
 
     # See Bundler::Dsl for reference

@@ -115,11 +115,11 @@ Given the following gem specifications:
 - foo 1.5.1, requires: ~> bar 3.0
 - bar with versions 2.0.3, 2.0.4, 2.1.0, 2.1.1, 3.0.0
 
-Gemfile: 
+Gemfile:
 
     gem 'foo'
 
-Gemfile.lock: 
+Gemfile.lock:
 
     foo (1.4.3)
       bar (~> 2.0)
@@ -195,33 +195,10 @@ anything else, and the most control you have is by modifying those in the
 Gemfile.
 
 
-## Development
-
-### Status
-
-0.x versions are subject to breaking changes, there's a fair amount of
-experimenting going on.
-
-We'd love to get real world scenarios where things don't go as planned to help
-flesh out varying details of what many believe a conservative update should
-be.
-
-### How To
-
-After checking out the repo, run `bin/setup` to install dependencies. Then,
-run `rake spec` to run the tests. You can also run `bin/console` for an
-interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`.
-To release a new version, update the version number in `version.rb`, and then
-run `bundle exec rake release`, which will create a git tag for the version,
-push git commits and tags, and push the `.gem` file to
-[rubygems.org](https://rubygems.org).
-
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at
-https://github.com/livingsocial/bundler-patch.
+To contribute to the bundler-patch codebase, see the [CONTRIBUTING.md](/CONTRIBUTING.md) file.
+
 
 ## License
 

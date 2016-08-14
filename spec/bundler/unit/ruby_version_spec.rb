@@ -25,7 +25,7 @@ describe RubyVersion do
       File.open(fn, 'w') { |f| f.puts old[i] }
 
       File.open(File.join(dir, 'Gemfile'), 'w') { |f| f.puts "ruby '#{old[i]}'"}
-      # FileUtils.cp File.expand_path('../../../fixture/.jenkins.xml', __FILE__), dir
+      File.open(File.join(dir, 'gems.rb'), 'w') { |f| f.puts "ruby '#{old[i]}'"}
     end
   end
 
@@ -43,6 +43,14 @@ describe RubyVersion do
     read_spec_contents(@specs[0], 'Gemfile').should == "ruby '1.9.3-p550'"
     read_spec_contents(@specs[1], 'Gemfile').should == "ruby '2.1.4'"
     read_spec_contents(@specs[2], 'Gemfile').should == "ruby 'jruby-1.7.16.1'"
+  end
+
+  it 'should update gems.rb' do
+    @specs.map(&:update)
+
+    read_spec_contents(@specs[0], 'gems.rb').should == "ruby '1.9.3-p550'"
+    read_spec_contents(@specs[1], 'gems.rb').should == "ruby '2.1.4'"
+    read_spec_contents(@specs[2], 'gems.rb').should == "ruby 'jruby-1.7.16.1'"
   end
 
   def read_spec_contents(spec, filename)

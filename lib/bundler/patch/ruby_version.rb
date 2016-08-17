@@ -1,9 +1,12 @@
 module Bundler::Patch
   class RubyVersion < UpdateSpec
+    RUBY_VERSION_LINE_REGEXPS = [/ruby\s+["'](.*)['"]/]
+
     def self.files
       {
         '.ruby-version' => [/.*/],
-        'Gemfile' => [/ruby\s+["'](.*)['"]/]
+        'Gemfile' => RUBY_VERSION_LINE_REGEXPS,
+        'gems.rb' => RUBY_VERSION_LINE_REGEXPS,
       }
     end
 

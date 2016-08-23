@@ -9,8 +9,8 @@ This is somewhat opposite from `bundle update` which prefers newest/major
 versions first.
 
 Works with Bundler 1.9 and higher. Starting with Bundler 1.13, much of the
-core behavior in `bundler-patch` has been ported to Bundler itself. See [this article](https://TODO) for ##### TO DO ######
-more information.
+core behavior in `bundler-patch` has been ported to Bundler itself. Read 
+[BUNDLER.md](BUNDLER.md) for more information.
 
 [![Build Status](https://travis-ci.org/livingsocial/bundler-patch.svg?branch=master)](https://travis-ci.org/livingsocial/bundler-patch)
 
@@ -34,23 +34,27 @@ made.
 latest releases from the current version, then the latest minor releases and
 then the latest major releases.
 
-Gem requirements as defined in the Gemfile will restrict the available version
-options.
+"Prefer" means that no available versions are removed from consideration*, to
+help ensure a suitable dependency graph can be reconciled. This does mean some
+gems cannot be upgraded or may be upgraded to unexpected versions. NOTE: There is
+a `--strict_updates` option which _will_ remove versions from consideration, see below.
+
+_*That's a white-lie. bundler-patch will actually remove from consideration
+any versions older than the currently locked version, which `bundle update`
+will not do. It's not common, but it is possible for `bundle update` to
+regress a gem to an older version, if necessary to reconcile the dependency
+graph._
+
+Gem requirements as defined in the Gemfile will still define what versions are available.
+The new conservative behavior controls the preference order of those versions.
 
 For example, if gem 'foo' is locked at 1.0.2, with no gem requirement defined
 in the Gemfile, and versions 1.0.3, 1.0.4, 1.1.0, 1.1.1, 2.0.0 all exist, the
 default order of preference will be "1.0.4, 1.0.3, 1.0.2, 1.1.1, 1.1.0,
 2.0.0".
 
-"Prefer" means that no available versions are removed from consideration*, to
-help ensure a suitable dependency graph can be reconciled. This does mean some
-gems cannot be upgraded or will be upgraded to unexpected versions.
-
-_*That's a white-lie. bundler-patch will actually remove from consideration
-any versions older than the currently locked version, which `bundle update`
-will not do. It's not common, but it is possible for `bundle update` to
-regress a gem to an older version, if necessary to reconcile the dependency
-graph._                             ## TO DO ## REMOVE THIS
+In the same example, if gem 'foo' has a requirement of '~> 1.0', version 2.0.0
+will be removed from consideration as always.
 
 With no gem names provided on the command line, all gems will be unlocked and
 open for updating. A list of gem names can be passed to restrict to just those

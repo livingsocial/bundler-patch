@@ -125,7 +125,7 @@ move is up to 1.4.4 and 2.0.4.
 First, make sure the current `bundle` command itself runs to completion on its
 own without any problems.
 
-The most frequent problems with this tool involve expectations around what
+The most frequent problems involve expectations around what
 gems should or shouldn't be upgraded. This can quickly get complicated as even
 a small dependency tree can involve many moving parts, and Bundler works hard
 to find a combination that satisfies all of the dependencies and requirements.

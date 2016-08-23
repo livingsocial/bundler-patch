@@ -24,7 +24,7 @@ module Bundler::Patch
             gvpp.strict = @strict
             gvpp.minimal = @prefer_minimal
             gvpp.gems_to_update = @gems_to_update
-            resolver = Bundler::Resolver.new(index, source_requirements, base, nil, gvpp)
+            resolver = Bundler::Resolver.new(index, source_requirements, base, nil, gvpp, additional_base_requirements_for_resolve)
           else
             resolver = ConservativeResolver.new(index, source_requirements, base)
             locked_specs = if @unlocking && @locked_specs.length == 0

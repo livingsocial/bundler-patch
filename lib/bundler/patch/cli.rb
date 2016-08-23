@@ -1,3 +1,5 @@
+require 'bundler'
+require 'bundler/vendor/thor/lib/thor'
 require 'bundler/advise'
 require 'slop'
 

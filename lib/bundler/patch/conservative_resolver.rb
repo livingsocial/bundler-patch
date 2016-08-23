@@ -3,11 +3,10 @@ module Bundler::Patch
     attr_accessor :locked_specs, :gems_to_update, :strict, :minor_preferred, :prefer_minimal
 
     def initialize(index, source_requirements, base)
-      # hack for 1.10 and 1.11+ support
       case Bundler::Resolver.instance_method(:initialize).arity
-      when 3
+      when 3 # 1.9 1.10
         super(index, source_requirements, base)
-      when 4
+      when 4 # 1.11 1.12
         super(index, source_requirements, base, nil)
       end
     end
@@ -74,48 +73,81 @@ module Bundler::Patch
     # reminder: sort still filters anything older than locked version
     def sort_specs(specs, locked_spec)
       return specs unless locked_spec
-      gem_name = locked_spec.name
-      locked_version = locked_spec.version
+      @gem_name = locked_spec.name
+      @locked_version = locked_spec.version
 
-      filtered = specs.select { |s| s.first.version >= locked_version }
+      filtered = specs.select { |s| s.first.version >= @locked_version }
 
-      filtered.sort do |a, b|
-        a_ver = a.first.version
-        b_ver = b.first.version
-        gem_patch = @gems_to_update.gem_patch_for(gem_name)
-        new_version = gem_patch ? gem_patch.new_version : nil
+      @gem_patch = @gems_to_update.gem_patch_for(@gem_name)
+      @new_version = @gem_patch ? @gem_patch.new_version : nil
+
+      result = filtered.sort do |a, b|
+        @a_ver = a.first.version
+        @b_ver = b.first.version
         case
-        when a_ver.segments[0] != b_ver.segments[0]
-          b_ver <=> a_ver
-        when !@minor_preferred && (a_ver.segments[1] != b_ver.segments[1])
-          b_ver <=> a_ver
-        when @prefer_minimal && !@gems_to_update.unlocking_gem?(gem_name)
-          b_ver <=> a_ver
-        when @prefer_minimal && @gems_to_update.unlocking_gem?(gem_name) &&
-          (![a_ver, b_ver].include?(locked_version) &&
-            (!new_version || (new_version && a_ver >= new_version && b_ver >= new_version)))
-          b_ver <=> a_ver
+        when segments_do_not_match(:major)
+          @b_ver <=> @a_ver
+        when !@minor_preferred && segments_do_not_match(:minor)
+          @b_ver <=> @a_ver
+        when @prefer_minimal && !unlocking_gem?
+          @b_ver <=> @a_ver
+        when @prefer_minimal && unlocking_gem? &&
+          (neither_version_matches(@locked_version) &&
+            (!@new_version || both_versions_gt_or_equal_to_version(@new_version)))
+          @b_ver <=> @a_ver
         else
-          a_ver <=> b_ver
-        end
-      end.tap do |result|
-        if @gems_to_update.unlocking_gem?(gem_name)
-          gem_patch = @gems_to_update.gem_patch_for(gem_name)
-          if gem_patch && gem_patch.new_version && @prefer_minimal
-            move_version_to_end(specs, gem_patch.new_version, result)
-          end
-        else
-          move_version_to_end(specs, locked_version, result)
+          @a_ver <=> @b_ver
         end
       end
+      post_sort(result)
     end
 
-    def move_version_to_end(specs, version, result)
-      spec_group = specs.detect { |s| s.first.version.to_s == version.to_s }
-      if spec_group
-        result.reject! { |s| s.first.version.to_s === version.to_s }
-        result << spec_group
+    def post_sort(result)
+      unless unlocking_gem?
+        result = move_version_to_end(result, @locked_version)
       end
+
+      if @new_version && unlocking_gem? && segments_match(:major, @new_version, @locked_version)
+        if @prefer_minimal || (!@prefer_minimal && (result.last.first.version < @new_version))
+          result = move_version_to_end(result, @new_version)
+        end
+      end
+
+      result
+    end
+
+    def unlocking_gem?
+      @gems_to_update.unlocking_gem?(@gem_name)
+    end
+
+    def either_version_older_than_locked(locked_version)
+      @a_ver < locked_version || @b_ver < locked_version
+    end
+
+    def segments_match(level, a_ver=@a_ver, b_ver=@b_ver)
+      !segments_do_not_match(level, a_ver, b_ver)
+    end
+
+    def segments_do_not_match(level, a_ver=@a_ver, b_ver=@b_ver)
+      index = [:major, :minor].index(level)
+      a_ver.segments[index] != b_ver.segments[index]
+    end
+
+    def neither_version_matches(match_version)
+      !one_version_matches(match_version)
+    end
+
+    def one_version_matches(match_version)
+      [@a_ver, @b_ver].include?(match_version)
+    end
+
+    def both_versions_gt_or_equal_to_version(version)
+      version && @a_ver >= version && @b_ver >= version
+    end
+
+    def move_version_to_end(result, version)
+      move, keep = result.partition { |s| s.first.version.to_s == version.to_s }
+      keep.concat(move)
     end
   end
 end

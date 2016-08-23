@@ -16,26 +16,37 @@ module Bundler::Patch
         else
           # Run a resolve against the locally available gems
           base = last_resolve.is_a?(Bundler::SpecSet) ? Bundler::SpecSet.new(last_resolve) : []
-          resolver = ConservativeResolver.new(index, source_requirements, base)
-          locked_specs = if @unlocking && @locked_specs.length == 0
-                           # Have to grab these again. Default behavior is to not store any
-                           # locked_specs if updating all gems, because behavior is the same
-                           # with no lockfile OR lockfile but update them all. In our case,
-                           # we need to know the locked versions for conservative comparison.
-                           locked = Bundler::LockfileParser.new(@lockfile_contents)
-                           Bundler::SpecSet.new(locked.specs)
-                         else
-                           @locked_specs
-                         end
+          if Gem::Version.new(Bundler::VERSION) >= Gem::Version.new('1.13.0.rc.2')
+            require 'bundler/patch/gem_version_patch_promoter'
 
-          resolver.gems_to_update = @gems_to_update
-          resolver.locked_specs = locked_specs
-          resolver.strict = @strict
-          resolver.minor_preferred = @minor_preferred
-          resolver.prefer_minimal = @prefer_minimal
+            gvpp = Bundler::Patch::GemVersionPatchPromoter.new(@gem_version_promoter.locked_specs, @gem_version_promoter.unlock_gems)
+            gvpp.level = @minor_preferred ? :minor : :patch
+            gvpp.strict = @strict
+            gvpp.minimal = @prefer_minimal
+            gvpp.gems_to_update = @gems_to_update
+            resolver = Bundler::Resolver.new(index, source_requirements, base, nil, gvpp, additional_base_requirements_for_resolve)
+          else
+            resolver = ConservativeResolver.new(index, source_requirements, base)
+            locked_specs = if @unlocking && @locked_specs.length == 0
+                             # Have to grab these again. Default behavior is to not store any
+                             # locked_specs if updating all gems, because behavior is the same
+                             # with no lockfile OR lockfile but update them all. In our case,
+                             # we need to know the locked versions for conservative comparison.
+                             locked = Bundler::LockfileParser.new(@lockfile_contents)
+                             Bundler::SpecSet.new(locked.specs)
+                           else
+                             @locked_specs
+                           end
+
+            resolver.gems_to_update = @gems_to_update
+            resolver.locked_specs = locked_specs
+            resolver.strict = @strict
+            resolver.minor_preferred = @minor_preferred
+            resolver.prefer_minimal = @prefer_minimal
+          end
+
           result = resolver.start(expanded_dependencies)
           spec_set = Bundler::SpecSet.new(result)
-
           last_resolve.merge spec_set
         end
       end

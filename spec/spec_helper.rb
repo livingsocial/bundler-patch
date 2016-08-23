@@ -12,5 +12,5 @@ require 'bundler/fixture'
 require_relative './fixture/gemfile_fixture'
 
 def bundler_1_13?
-  Gem::Version.new(Bundler::VERSION) >= Gem::Version.new('1.13.0.cu.1') # TODO: update version
+  Gem::Version.new(Bundler::VERSION) >= Gem::Version.new('1.13.0.rc.2')
 end

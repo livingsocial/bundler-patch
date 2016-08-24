@@ -195,6 +195,18 @@ anything else, and the most control you have is by modifying those in the
 Gemfile.
 
 
+## Development
+
+### Status
+
+0.x versions are subject to breaking changes, there's a fair amount of
+experimenting going on.
+
+We'd love to get real world scenarios where things don't go as planned to help
+flesh out varying details of what many believe a conservative update should
+be.
+
+
 ## Contributing
 
 To contribute to the bundler-patch codebase, see the [CONTRIBUTING.md](/CONTRIBUTING.md) file.

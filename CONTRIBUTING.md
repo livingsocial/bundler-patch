@@ -14,17 +14,6 @@ Here are a few technical guidelines to follow:
 Bug reports and pull requests are welcome on GitHub at
 https://github.com/livingsocial/bundler-patch.
 
-## Development
-
-### Status
-
-0.x versions are subject to breaking changes, there's a fair amount of
-experimenting going on.
-
-We'd love to get real world scenarios where things don't go as planned to help
-flesh out varying details of what many believe a conservative update should
-be.
-
 ### How To
 
 After checking out the repo, run `bin/setup` to install dependencies. You can also run

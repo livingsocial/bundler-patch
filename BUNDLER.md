@@ -96,7 +96,7 @@ Gemfile.lock:
 | # | Command Line                   | Result                    |
 |---|--------------------------------|---------------------------|
 | 1 | bundle update --patch          | 'foo 1.4.5', 'bar 2.1.1'  |
-| 2 | bundle update --patch foo      | 'foo 1.4.4', 'bar 2.0.3'  |
+| 2 | bundle update --patch foo      | 'foo 1.4.5', 'bar 2.1.1'  |
 | 3 | bundle update --minor          | 'foo 1.5.1', 'bar 3.0.0'  |
 | 4 | bundle update --minor --strict | 'foo 1.5.0', 'bar 2.1.1'  |
 | 5 | bundle update --patch --strict | 'foo 1.4.4', 'bar 2.0.4'  |
@@ -104,8 +104,9 @@ Gemfile.lock:
 In case 1, `bar` is upgraded to 2.1.1, a minor version increase, because the
 dependency from `foo` 1.4.5 required it.
 
-In case 2, only `foo` is unlocked, so `foo` can only go to 1.4.4 to maintain
-the dependency to `bar`.
+In case 2, only `foo` is unlocked, but because no other gem depends on `bar`
+and `bar` is not a declared dependency in the Gemfile, bar` is free to move, 
+and so the result is the same as case 1. 
 
 In case 3, `bar` goes up a whole major release, because a minor increase is
 preferred now for `foo`, and when it goes to 1.5.1, it requires 3.0.0 of
@@ -119,6 +120,110 @@ In case 5, both `foo` and `bar` have any minor or major increments removed
 from consideration because of the `--strict` flag, so the most they can
 move is up to 1.4.4 and 2.0.4.
 
+### Shared Dependencies
+
+#### Shared Cannot Move
+
+Given the following gem specifications:
+
+- foo 1.4.3, requires: ~> shared 2.0, ~> bar 2.0
+- foo 1.4.4, requires: ~> shared 2.0, ~> bar 2.0
+- foo 1.4.5, requires: ~> shared 2.1, ~> bar 2.1
+- foo 1.5.0, requires: ~> shared 2.1, ~> bar 2.1
+- qux 1.0.0, requires: ~> shared 2.0.0           
+- bar with versions 2.0.3, 2.0.4, 2.1.0, 2.1.1
+- shared with versions 2.0.3, 2.0.4, 2.1.0, 2.1.1
+
+Gemfile: 
+
+    gem 'foo'
+    gem 'qux'
+
+Gemfile.lock: 
+
+    bar (2.0.3)
+    foo (1.4.3)
+      bar (~> 2.0)
+      shared (~> 2.0)
+    qux (1.0.0)
+      shared (~> 2.0.0)
+    shared (2.0.3)
+    
+
+| # | Command Line                   | Result                                    |
+|---|--------------------------------|-------------------------------------------|
+| 1 | bundle update --patch foo      | 'foo 1.4.4', 'bar 2.0.3', 'shared 2.0.3'  |
+| 2 | bundle update --patch foo bar  | 'foo 1.4.4', 'bar 2.0.4', 'shared 2.0.3'  |
+| 3 | bundle update --patch          | 'foo 1.4.4', 'bar 2.0.4', 'shared 2.0.4'  |
+
+In case 1, only `foo` moves. When `foo` 1.4.5 is considered in resolution, it 
+would require `shared` 2.1 which isn't allowed because `qux` is incompatible. 
+Resolution backs up to `foo` 1.4.4, and that is allowed by the `qux` constraint
+on `shared` so `foo` moves. `bar` could legally move, but since it is locked 
+and the current version still satisfies the requirement of `~> 2.0` it stays 
+put.
+
+In case 2, everything is the same, but `bar` is also unlocked, so it is also
+allowed to increment to 2.0.4 which still satisfies `~> 2.0`.
+
+In case 3, everything is unlocked, so `shared` can also bump up a patch version.
+
+#### Shared Can Move
+
+_*This is exactly the same setup as "Shared Cannot Move" except for one change.*_
+
+The `qux` gem has a looser requirement of `shared`: `~> 2.0` instead of `~> 2.0.0`.
+
+Given the following gem specifications:
+
+- foo 1.4.3, requires: ~> shared 2.0, ~> bar 2.0
+- foo 1.4.4, requires: ~> shared 2.0, ~> bar 2.0
+- foo 1.4.5, requires: ~> shared 2.1, ~> bar 2.1
+- foo 1.5.0, requires: ~> shared 2.1, ~> bar 2.1
+- qux 1.0.0, requires: ~> shared 2.0           
+- bar with versions 2.0.3, 2.0.4, 2.1.0, 2.1.1
+- shared with versions 2.0.3, 2.0.4, 2.1.0, 2.1.1
+
+Gemfile: 
+
+    gem 'foo'
+    gem 'qux'
+
+Gemfile.lock: 
+
+    bar (2.0.3)
+    foo (1.4.3)
+      bar (~> 2.0)
+      shared (~> 2.0)
+    qux (1.0.0)
+      shared (~> 2.0)
+    shared (2.0.3)
+    
+
+| # | Command Line                   | Result                                    |
+|---|--------------------------------|-------------------------------------------|
+| 1 | bundle update --patch foo      | 'foo 1.4.5', 'bar 2.1.1', 'shared 2.1.1'  |
+| 2 | bundle update --patch foo bar  | 'foo 1.4.5', 'bar 2.1.1', 'shared 2.1.1'  |
+| 3 | bundle update --patch          | 'foo 1.4.5', 'bar 2.1.1', 'shared 2.1.1'  |
+
+In all 3 cases, because `foo` 1.4.5 depends on newer versions of `bar` and 
+`shared`, and no requirements from `qux` are restricting those two from moving, 
+then all move as far as allowed here.
+ 
+`foo` can only move to 1.4.5 and not 1.5.0 because of the `--patch` flag. 
+ 
+As previously demonstrated (see Two Cases) `bar` and `shared` move past the 
+`--patch` restriction because `--strict` is not in play, they are not declared 
+dependencies in the Gemfile and they need to move to satisfy the new `foo` 
+requirement.
+
+### Bundle Install Like Conservative Updating
+
+As detailed in [Bundle Install Docs](http://bundler.io/v1.13/man/bundle-install.1.html#CONSERVATIVE-UPDATING)
+there is a way to prevent shared dependencies from moving after (a) changing 
+a requirement in the Gemfile and (b) using `bundle install`. There's currently
+not an equivalent way to do this with `bundler-patch` or `bundle update` but
+this may change in the future.
 
 ### Troubleshooting
 

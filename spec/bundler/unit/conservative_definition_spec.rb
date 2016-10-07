@@ -272,5 +272,184 @@ describe ConservativeDefinition do
     # see bundler-1.10.6/lib/bundler/installer.rb comments for explanation of frozen
 
     it 'what happens when a new version introduces a brand new gem' #?
+
+    # make sure the docs match reality
+    context 'BUNDLER.md' do
+      def test_it(gems: [], options: {strict_updates: false, minor_preferred: false})
+        @bf.create_lockfile(gem_dependencies: @gem_deps, source_specs: @lock_source_specs, ensure_sources: false)
+
+        bundler_def = @bf.create_definition(gem_dependencies: @gem_deps, source_specs: @source_specs,
+                                            ensure_sources: false, update_gems: gems.empty? ? true : gems)
+        test_conservative_update(gems, options, bundler_def)
+      end
+
+      context 'Two Gems' do
+        before do
+          @gem_deps = [@bf.create_dependency('foo')]
+          @lock_source_specs = [
+            @bf.create_specs('foo', %w(1.4.3), [['bar', '~> 2.0']]),
+            @bf.create_specs('bar', %w(2.0.3)),
+          ]
+          @source_specs = [
+            @bf.create_specs('foo', %w(1.4.3 1.4.4), [['bar', '~> 2.0']]),
+            @bf.create_specs('foo', %w(1.4.5 1.5.0), [['bar', '~> 2.1']]),
+            @bf.create_specs('foo', %w(1.5.1), [['bar', '~> 3.0']]),
+            @bf.create_specs('bar', %w(2.0.3 2.0.4 2.1.0 2.1.1 3.0.0)),
+          ]
+        end
+
+        it 'bundle update --patch' do
+          Dir.chdir(@bf.dir) do
+            test_it
+
+            lockfile_spec_version('foo').should == '1.4.5'
+            lockfile_spec_version('bar').should == '2.1.1'
+          end
+        end
+
+        it 'bundle update --patch foo' do
+          Dir.chdir(@bf.dir) do
+            test_it(gems: 'foo')
+
+            lockfile_spec_version('foo').should == '1.4.5'
+            lockfile_spec_version('bar').should == '2.1.1'
+          end
+        end
+
+        it 'bundle update --minor' do
+          Dir.chdir(@bf.dir) do
+            test_it(options: {minor_preferred: true})
+
+            lockfile_spec_version('foo').should == '1.5.1'
+            lockfile_spec_version('bar').should == '3.0.0'
+          end
+        end
+
+        it 'bundle update --minor --strict' do
+          Dir.chdir(@bf.dir) do
+            test_it(options: {minor_preferred: true, strict_updates: true})
+
+            lockfile_spec_version('foo').should == '1.5.0'
+            lockfile_spec_version('bar').should == '2.1.1'
+          end
+        end
+
+        it 'bundle update --patch --strict' do
+          Dir.chdir(@bf.dir) do
+            test_it(options: {minor_preferred: false, strict_updates: true})
+
+            lockfile_spec_version('foo').should == '1.4.4'
+            lockfile_spec_version('bar').should == '2.0.4'
+          end
+        end
+      end
+
+      context 'Shared Dependencies' do
+        context 'Cannot Move' do
+          before do
+            @gem_deps = [@bf.create_dependency('foo'), @bf.create_dependency('qux')]
+            @lock_source_specs = [
+              @bf.create_specs('foo', %w(1.4.3), [['shared', '~> 2.0'], ['bar', '~> 2.0']]),
+              @bf.create_specs('qux', %w(1.0.0), [['shared', '~> 2.0.0']]),
+              @bf.create_specs('bar', %w(2.0.3)),
+              @bf.create_specs('shared', %w(2.0.3)),
+            ]
+            @source_specs = [
+              @bf.create_specs('foo', %w(1.4.3 1.4.4), [['shared', '~> 2.0'], ['bar', '~> 2.0']]),
+              @bf.create_specs('foo', %w(1.4.5 1.5.0), [['shared', '~> 2.1'], ['bar', '~> 2.1']]),
+              @bf.create_specs('qux', %w(1.0.0), [['shared', '~> 2.0.0']]),
+              @bf.create_specs('bar', %w(2.0.3 2.0.4 2.1.0 2.1.1)),
+              @bf.create_specs('shared', %w(2.0.3 2.0.4 2.1.0 2.1.1)),
+            ]
+          end
+
+          it 'bundle update --patch foo' do
+            Dir.chdir(@bf.dir) do
+              test_it(gems: ['foo'])
+
+              lockfile_spec_version('foo').should == '1.4.4' #'1.4.5'
+              lockfile_spec_version('bar').should == '2.0.3' #'2.1.1'
+              lockfile_spec_version('qux').should == '1.0.0' #'1.0.0'
+              lockfile_spec_version('shared').should == '2.0.3' #'2.0.3'
+            end
+          end
+
+          it 'bundle update --patch foo bar' do
+            Dir.chdir(@bf.dir) do
+              test_it(gems: ['foo', 'bar'])
+
+              lockfile_spec_version('foo').should == '1.4.4' #'1.4.5'
+              lockfile_spec_version('bar').should == '2.0.4' #'2.1.1'
+              lockfile_spec_version('qux').should == '1.0.0' #'1.0.0'
+              lockfile_spec_version('shared').should == '2.0.3' #'2.0.3'
+            end
+          end
+
+          it 'bundle update --patch' do
+            Dir.chdir(@bf.dir) do
+              test_it
+
+              lockfile_spec_version('foo').should == '1.4.4' #'1.4.5'
+              lockfile_spec_version('bar').should == '2.0.4' #'2.1.1'
+              lockfile_spec_version('qux').should == '1.0.0' #'1.0.0'
+              lockfile_spec_version('shared').should == '2.0.4' #'2.0.3'
+            end
+          end
+        end
+
+        # Almost identical, but dependency between qux and shared is more flexible
+        context 'Can Move' do
+          before do
+            @gem_deps = [@bf.create_dependency('foo'), @bf.create_dependency('qux')]
+            @lock_source_specs = [
+              @bf.create_specs('foo', %w(1.4.3), [['shared', '~> 2.0'], ['bar', '~> 2.0']]),
+              @bf.create_specs('qux', %w(1.0.0), [['shared', '~> 2.0']]),
+              @bf.create_specs('bar', %w(2.0.3)),
+              @bf.create_specs('shared', %w(2.0.3)),
+            ]
+            @source_specs = [
+              @bf.create_specs('foo', %w(1.4.3 1.4.4), [['shared', '~> 2.0'], ['bar', '~> 2.0']]),
+              @bf.create_specs('foo', %w(1.4.5 1.5.0), [['shared', '~> 2.1'], ['bar', '~> 2.1']]),
+              @bf.create_specs('qux', %w(1.0.0), [['shared', '~> 2.0']]),
+              @bf.create_specs('bar', %w(2.0.3 2.0.4 2.1.0 2.1.1)),
+              @bf.create_specs('shared', %w(2.0.3 2.0.4 2.1.0 2.1.1)),
+            ]
+          end
+
+          it 'bundle update --patch foo' do
+            Dir.chdir(@bf.dir) do
+              test_it(gems: ['foo'])
+
+              lockfile_spec_version('foo').should == '1.4.5'
+              lockfile_spec_version('bar').should == '2.1.1'
+              lockfile_spec_version('qux').should == '1.0.0'
+              lockfile_spec_version('shared').should == '2.1.1'
+            end
+          end
+
+          it 'bundle update --patch foo bar' do
+            Dir.chdir(@bf.dir) do
+              test_it(gems: ['foo', 'bar'])
+
+              lockfile_spec_version('foo').should == '1.4.5'
+              lockfile_spec_version('bar').should == '2.1.1'
+              lockfile_spec_version('qux').should == '1.0.0'
+              lockfile_spec_version('shared').should == '2.1.1'
+            end
+          end
+
+          it 'bundle update --patch' do
+            Dir.chdir(@bf.dir) do
+              test_it
+
+              lockfile_spec_version('foo').should == '1.4.5'
+              lockfile_spec_version('bar').should == '2.1.1'
+              lockfile_spec_version('qux').should == '1.0.0'
+              lockfile_spec_version('shared').should == '2.1.1'
+            end
+          end
+        end
+      end
+    end
   end
 end

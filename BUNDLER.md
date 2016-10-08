@@ -105,7 +105,7 @@ In case 1, `bar` is upgraded to 2.1.1, a minor version increase, because the
 dependency from `foo` 1.4.5 required it.
 
 In case 2, only `foo` is unlocked, but because no other gem depends on `bar`
-and `bar` is not a declared dependency in the Gemfile, bar` is free to move, 
+and `bar` is not a declared dependency in the Gemfile, `bar` is free to move, 
 and so the result is the same as case 1. 
 
 In case 3, `bar` goes up a whole major release, because a minor increase is

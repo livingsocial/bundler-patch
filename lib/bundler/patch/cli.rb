@@ -100,7 +100,11 @@ module Bundler::Patch
       end
 
       if all_gem_patches.empty?
-        Bundler.ui.info 'Updating all gems conservatively.'
+        if options[:vulnerable_gems_only]
+          return # nothing to do
+        else
+          Bundler.ui.info 'Updating all gems conservatively.'
+        end
       else
         Bundler.ui.info "Updating '#{all_gem_patches.map(&:gem_name).join(' ')}' conservatively."
       end

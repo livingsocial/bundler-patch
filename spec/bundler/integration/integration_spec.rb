@@ -80,6 +80,23 @@ describe CLI do
       end
     end
 
+    it 'all gems, no vulnerability, -v flag, should do nothing' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {addressable: nil},
+                     locks: {addressable: '2.1.1'})
+        end
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          CLI.new.patch(vulnerable_gems_only: true)
+        end
+
+        lockfile_spec_version('addressable').should == '2.1.1'
+      end
+    end
+
     it 'single gem, minor allowed' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|
@@ -257,6 +274,16 @@ describe CLI do
         end
 
         File.exist?(File.join(target_dir, 'gems')).should eq true
+      end
+    end
+  end
+
+  context 'ruby patch' do
+    it 'update mri ruby' do
+      Dir.chdir(@bf.dir) do
+        File.open('Gemfile', 'w') { |f| f.puts "ruby '2.1.5'" }
+        CLI.new.patch(ruby: true, rubies: ['2.1.6'])
+        File.read('Gemfile').chomp.should == "ruby '2.1.6'"
       end
     end
   end

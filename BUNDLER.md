@@ -170,8 +170,7 @@ In case 3, everything is unlocked, so `shared` can also bump up a patch version.
 
 #### Shared Can Move
 
-_*This is exactly the same setup as "Shared Cannot Move" except for one change.*_
-
+_*This is exactly the same setup as "Shared Cannot Move" except for one change:*_
 The `qux` gem has a looser requirement of `shared`: `~> 2.0` instead of `~> 2.0.0`.
 
 Given the following gem specifications:

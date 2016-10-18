@@ -12,7 +12,7 @@ end
 
 describe CLI do
   before do
-    @bf = BundlerFixture.new
+    @bf = BundlerFixture.new(dir: File.expand_path('../../../tmp', __dir__))
     ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
   end
 
@@ -170,6 +170,29 @@ describe CLI do
 
         lockfile_spec_version('rack').should == '1.4.6'
         lockfile_spec_version('addressable').should == '2.1.1'
+      end
+    end
+
+    it 'single gem with vulnerability updates cache' do
+      Dir.chdir(@bf.dir) do
+        GemfileLockFixture.tap do |fix|
+          fix.create(dir: @bf.dir,
+                     gems: {rack: nil, addressable: nil},
+                     locks: {rack: '1.4.1', addressable: '2.1.1'})
+        end
+
+        # Ensure vendor/cache exists
+        FileUtils.makedirs File.join(@bf.dir, 'vendor', 'cache')
+
+        Bundler.with_clean_env do
+          ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+          # Bundler.reset! is only in 1.13, but these are the only bits we need reset for this to work:
+          %w(root load).each { |name| Bundler.instance_variable_set("@#{name}", nil) }
+          CLI.new.patch(strict_updates: true, gems_to_update: ['rack'])
+        end
+
+        lockfile_spec_version('rack').should == '1.4.7'
+        File.exist?(File.join(@bf.dir, 'vendor', 'cache', 'rack-1.4.7.gem')).should == true
       end
     end
 

@@ -118,6 +118,7 @@ module Bundler::Patch
       # may end up concluding everything can be resolved locally, nothing is changing,
       # and then nothing is done. lib/bundler/cli/update.rb also hard-codes this.
       Bundler::Installer.install(Bundler.root, prep.bundler_def, {'update' => true})
+      Bundler.load.cache if Bundler.app_cache.exist?
     end
   end
 end

@@ -57,8 +57,10 @@ describe RubyVersion do
     File.read(File.join(spec.target_dir, filename)).chomp
   end
 
-  it 'should support custom file replacement definitions'
-  # should be able to extend RubyVersion.files Hash
+  it 'should support custom file replacement definitions' do
+    Bundler::Patch::RubyVersion.files['foo'] = 'bar'
+    Bundler::Patch::RubyVersion.files['foo'].should == 'bar'
+  end
 
   it 'should not blow up if no new version is found - dump warning?'
 end

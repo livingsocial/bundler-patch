@@ -3,7 +3,7 @@ module Bundler::Patch
     RUBY_VERSION_LINE_REGEXPS = [/ruby\s+["'](.*)['"]/]
 
     def self.files
-      {
+      @files ||= {
         '.ruby-version' => [/.*/],
         'Gemfile' => RUBY_VERSION_LINE_REGEXPS,
         'gems.rb' => RUBY_VERSION_LINE_REGEXPS,

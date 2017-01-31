@@ -16,7 +16,8 @@ module Bundler::Patch
         else
           # Run a resolve against the locally available gems
           base = last_resolve.is_a?(Bundler::SpecSet) ? Bundler::SpecSet.new(last_resolve) : []
-          if Gem::Version.new(Bundler::VERSION) >= Gem::Version.new('1.13.0.rc.2')
+          bundler_version = Gem::Version.new(Bundler::VERSION)
+          if bundler_version >= Gem::Version.new('1.13.0.rc.2')
             require 'bundler/patch/gem_version_patch_promoter'
 
             gvpp = Bundler::Patch::GemVersionPatchPromoter.new(@gem_version_promoter.locked_specs, @gem_version_promoter.unlock_gems)
@@ -24,7 +25,12 @@ module Bundler::Patch
             gvpp.strict = @strict
             gvpp.minimal = @prefer_minimal
             gvpp.gems_to_update = @gems_to_update
-            resolver = Bundler::Resolver.new(index, source_requirements, base, nil, gvpp, additional_base_requirements_for_resolve)
+
+            if bundler_version >= Gem::Version.new('1.14.0.rc.1')
+              resolver = Bundler::Resolver.new(index, source_requirements, base, gvpp, additional_base_requirements_for_resolve, platforms)
+            else
+              resolver = Bundler::Resolver.new(index, source_requirements, base, nil, gvpp, additional_base_requirements_for_resolve)
+            end
           else
             resolver = ConservativeResolver.new(index, source_requirements, base)
             locked_specs = if @unlocking && @locked_specs.length == 0

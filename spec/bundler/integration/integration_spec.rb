@@ -304,9 +304,9 @@ describe CLI do
   context 'ruby patch' do
     it 'update mri ruby' do
       Dir.chdir(@bf.dir) do
-        File.open('Gemfile', 'w') { |f| f.puts "ruby '2.1.5'" }
-        CLI.new.patch(ruby: true, rubies: ['2.1.6'])
-        File.read('Gemfile').chomp.should == "ruby '2.1.6'"
+        File.open('Gemfile', 'w') { |f| f.puts "ruby '2.3.0'" }
+        CLI.new.patch(ruby: true, rubies: ['2.3.3'])
+        File.read('Gemfile').chomp.should == "ruby '2.3.3'"
       end
     end
   end

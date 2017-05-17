@@ -4,9 +4,7 @@ module Bundler::Patch
 
     def self.files
       @files ||= {
-        '.ruby-version' => [/.*/],
-        'Gemfile' => RUBY_VERSION_LINE_REGEXPS,
-        'gems.rb' => RUBY_VERSION_LINE_REGEXPS,
+        '.ruby-version' => [/.*/]
       }
     end
 
@@ -18,7 +16,9 @@ module Bundler::Patch
     end
 
     def update
-      self.class.files.each_pair do |file, regexes|
+      hash = self.class.files.dup
+      hash[@target_file.dup] = RUBY_VERSION_LINE_REGEXPS
+      hash.each_pair do |file, regexes|
         @target_file = file
         @regexes = regexes
         file_replace

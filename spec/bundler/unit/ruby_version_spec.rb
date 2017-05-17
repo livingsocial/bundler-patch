@@ -14,7 +14,7 @@ describe RubyVersion do
     old = %w(1.9.3-p484 2.1.2 jruby-1.7.16)
 
     @specs = dirs.map do |dir|
-      Bundler::Patch::RubyVersion.new(target_dir: File.join(File.dirname(__FILE__), dir),
+      Bundler::Patch::RubyVersion.new(target_bundle: TargetBundle.new(dir: File.join(File.dirname(__FILE__), dir)),
                                       patched_versions: patched_versions)
     end
 

@@ -5,6 +5,7 @@ module Bundler
   end
 end
 
+require 'bundler/patch/target_bundle'
 require 'bundler/patch/updater'
 require 'bundler/patch/gemfile'
 require 'bundler/patch/ruby_version'

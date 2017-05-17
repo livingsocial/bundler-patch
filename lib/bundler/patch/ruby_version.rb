@@ -10,9 +10,9 @@ module Bundler::Patch
       }
     end
 
-    def initialize(target_dir: Dir.pwd, patched_versions: [])
-      super(target_file: target_file,
-            target_dir: target_dir,
+    def initialize(target_bundle: TargetBundle.new, patched_versions: [])
+      super(target_file: target_bundle.gemfile,
+            target_dir: target_bundle.dir,
             regexes: regexes,
             patched_versions: patched_versions)
     end

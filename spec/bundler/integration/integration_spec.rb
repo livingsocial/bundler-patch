@@ -308,6 +308,8 @@ describe CLI do
     end
 
     it 'update mri ruby' do
+      current_ruby_api = RbConfig::CONFIG['ruby_version']
+      current_ruby = RUBY_VERSION
       Dir.chdir(@bf.dir) do
         File.open('Gemfile', 'w') { |f| f.puts "ruby '#{@current_ruby_api}'" }
         CLI.new.patch(ruby: true, rubies: [@current_ruby])

@@ -12,7 +12,11 @@ end
 
 describe CLI do
   before do
-    @bf = BundlerFixture.new(dir: File.expand_path('../../../tmp', __dir__))
+    setup_bundler_fixture
+  end
+
+  def setup_bundler_fixture(gemfile: 'Gemfile')
+    @bf = BundlerFixture.new(dir: File.expand_path('../../../tmp', __dir__), gemfile: gemfile)
     ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
   end
 
@@ -263,6 +267,28 @@ describe CLI do
       end
     end
 
+    it 'single gem with change to Gemfile with custom Gemfile name' do
+      gemfile_base = 'Custom.gemfile'
+      gemfile_name = File.join(@bf.dir, gemfile_base)
+
+      setup_bundler_fixture(gemfile: gemfile_base)
+
+      GemfileLockFixture.tap do |fix|
+        fix.create(dir: @bf.dir,
+                   gems: {rack: '1.4.1'},
+                   locks: {rack: '1.4.1'},
+                   gemfile: gemfile_base)
+      end
+
+      Bundler.with_clean_env do
+        CLI.new.patch(gemfile: gemfile_name)
+      end
+
+      gemfile_contents = File.read(gemfile_name)
+      gemfile_contents.should include "gem 'rack', '1.4.6'"
+      lockfile_spec_version('rack').should == '1.4.6'
+    end
+
     def with_captured_stdout
       begin
         old_stdout = $stdout
@@ -323,13 +349,18 @@ describe CLI do
     end
 
     it 'update mri ruby' do
-      current_ruby_api = RbConfig::CONFIG['ruby_version']
-      current_ruby = RUBY_VERSION
       Dir.chdir(@bf.dir) do
         File.open('Gemfile', 'w') { |f| f.puts "ruby '#{@current_ruby_api}'" }
         CLI.new.patch(ruby: true, rubies: [@current_ruby])
         File.read('Gemfile').chomp.should == "ruby '#{@current_ruby}'"
       end
+    end
+
+    it 'updates ruby version in custom Gemfile' do
+      fn = File.join(@bf.dir, 'Custom.gemfile')
+      File.open(fn, 'w') { |f| f.puts "ruby '#{@current_ruby_api}'" }
+      CLI.new.patch(ruby: true, rubies: [@current_ruby], gemfile: fn)
+      File.read(fn).chomp.should == "ruby '#{@current_ruby}'"
     end
   end
 end

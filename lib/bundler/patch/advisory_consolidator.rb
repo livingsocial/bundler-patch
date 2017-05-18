@@ -63,7 +63,8 @@ module Bundler::Patch
       end.map do |_, all|
         all.sort.last
       end
-      Gemfile.new(gem_name: all_gem_names.first, patched_versions: highest_minor_patched)
+      Gemfile.new(target_bundle: @options[:target] || TargetBundle.new,
+                  gem_name: all_gem_names.first, patched_versions: highest_minor_patched)
     end
   end
 

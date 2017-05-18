@@ -95,13 +95,11 @@ module Bundler::Patch
 
       normalize_options(options)
 
-      # copy/pasta from Bundler
-      custom_gemfile = options[:gemfile] || Bundler.settings[:gemfile]
-      ENV['BUNDLE_GEMFILE'] = File.expand_path(custom_gemfile) if custom_gemfile && !custom_gemfile.empty?
+      process_gemfile_option(options)
 
       return list(options) if options[:list]
 
-      patch_ruby(options[:rubies]) if options[:ruby]
+      patch_ruby(options) if options[:ruby]
 
       patch_gems(options)
     end
@@ -119,6 +117,19 @@ module Bundler::Patch
 
     private
 
+    def process_gemfile_option(options)
+      # copy/pasta from Bundler
+      custom_gemfile = options[:gemfile] || Bundler.settings[:gemfile]
+      if custom_gemfile && !custom_gemfile.empty?
+        ENV['BUNDLE_GEMFILE'] = File.expand_path(custom_gemfile)
+        dir, gemfile = [File.dirname(custom_gemfile), File.basename(custom_gemfile)]
+        target_bundle = TargetBundle.new(dir: dir, gemfile: gemfile)
+        options[:target] = target_bundle
+      else
+        options[:target] = TargetBundle.new
+      end
+    end
+
     def list(options)
       gem_patches = AdvisoryConsolidator.new(options).vulnerable_gems
 
@@ -132,8 +143,9 @@ module Bundler::Patch
       end
     end
 
-    def patch_ruby(supported)
-      RubyVersion.new(patched_versions: supported).update
+    def patch_ruby(options)
+      supported = options[:rubies]
+      RubyVersion.new(target_bundle: options[:target], patched_versions: supported).update
     end
 
     def patch_gems(options)

@@ -3,8 +3,8 @@
 # doesn't include that yet. Though it prolly should.
 # TODO: PR to bundler-fixture to include Gemfile
 class GemfileLockFixture
-  def self.create(dir:, gems: {}, locks: nil, sources: [])
-    fix = self.new(dir: dir, gems: gems, locks: locks, sources: sources).tap do |fix|
+  def self.create(dir:, gems: {}, locks: nil, sources: [], gemfile: 'Gemfile')
+    fix = self.new(dir: dir, gems: gems, locks: locks, sources: sources, gemfile: gemfile).tap do |fix|
       fix.create_gemfile
       fix.create_gemfile_lock
     end
@@ -18,11 +18,12 @@ class GemfileLockFixture
 
   attr_reader :dir, :gems, :locks
 
-  def initialize(dir:, gems:, locks: nil, sources: [])
+  def initialize(dir:, gems:, locks: nil, sources: [], gemfile: gemfile)
     @dir = dir
     @gems = gems
     @locks = locks
     @sources = sources
+    @gemfile = gemfile
   end
 
   def create_gemfile
@@ -34,12 +35,12 @@ class GemfileLockFixture
       Array(versions).each { |version| line << ", '#{version}'" } if versions
       lines << line
     end
-    write_lines(lines, 'Gemfile')
-    File.join(@dir, 'Gemfile')
+    write_lines(lines, @gemfile)
+    File.join(@dir, @gemfile)
   end
 
   def create_gemfile_lock
-    bf = BundlerFixture.new(dir: @dir)
+    bf = BundlerFixture.new(dir: @dir, gemfile: @gemfile)
     specs = (@locks || @gems).map { |name, version| bf.create_dependency(name.to_s, version) }
     bf.create_lockfile(gem_dependencies: specs)
   end

@@ -44,6 +44,21 @@ describe CLI do
       end
     end
 
+    it 'single gem with vulnerability with --gemfile option' do
+      GemfileLockFixture.tap do |fix|
+        fix.create(dir: @bf.dir,
+                   gems: {rack: nil, addressable: nil},
+                   locks: {rack: '1.4.1', addressable: '2.1.1'})
+      end
+
+      Bundler.with_clean_env do
+        CLI.new.patch(gems_to_update: ['rack'], gemfile: File.join(@bf.dir, 'Gemfile'))
+      end
+
+      lockfile_spec_version('rack').should == '1.4.7'
+      lockfile_spec_version('addressable').should == '2.1.1'
+    end
+
     it 'all gems, one with vulnerability' do
       Dir.chdir(@bf.dir) do
         GemfileLockFixture.tap do |fix|

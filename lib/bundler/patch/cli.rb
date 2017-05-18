@@ -18,6 +18,7 @@ module Bundler::Patch
         on '-r', '--ruby', 'Update Ruby version in related files.'
         on '--rubies=', 'Supported Ruby versions. Comma delimited or multiple switches.', as: Array, delimiter: ','
         on '-g=', '--gemfile=', 'Optional Gemfile to execute against. Defaults to Gemfile in current directory.'
+        on '--use_target_ruby', 'Optionally attempt to use Ruby version of target bundle specified in --gemfile.'
 
         # Does --gemfile option of bundle install obey the bundle config of the dir the Gemfile is in?
         # A> Yes, at least the path. But the runtime involved ... no. That's not in there. Even if

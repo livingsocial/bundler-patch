@@ -8,9 +8,9 @@ module Bundler::Patch
     def self.execute
       opts = Slop.parse! do
         banner "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: bundle patch [options] [gems_to_update]\n\nbundler-patch attempts to update gems conservatively.\n"
-        on '-m', '--minor-preferred', 'Prefer update to the latest minor.release version.'
-        on '-p', '--prefer-minimal', 'Prefer minimal version updates over most recent release (or minor if -m used).'
-        on '-s', '--strict-updates', 'Restrict any gem to be upgraded past most recent release (or minor if -m used).'
+        on '-m', '--minor-preferred', 'Prefer update to the latest minor.patch version.'
+        on '-p', '--prefer-minimal', 'Prefer minimal version updates over most recent patch (or minor if -m used).'
+        on '-s', '--strict-updates', 'Restrict any gem to be upgraded past most recent patch (or minor if -m used).'
         on '-l', '--list', 'List vulnerable gems and new version target. No updates will be performed.'
         on '-v', '--vulnerable-gems-only', 'Only update vulnerable gems.'
         on '-a=', '--advisory-db-path=', 'Optional custom advisory db path. `gems` dir will be appended to this path.'

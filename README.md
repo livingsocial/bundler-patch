@@ -3,10 +3,10 @@
 `bundler-patch` can update your gems conservatively to deal with vulnerable
 gems or just get more current.
 
-By default, "conservatively" means it will prefer the latest releases from the
-current version, over the latest minor releases or the latest major releases.
-This is somewhat opposite from `bundle update` which prefers newest/major
-versions first.
+By default, "conservatively" means it will prefer the latest patch releases
+from the current version, over the latest minor releases or the latest major
+releases. This is somewhat opposite from `bundle update` which prefers
+newest/major versions first.
 
 Works with Bundler 1.9 and higher. Starting with Bundler 1.13, much of the
 core behavior in `bundler-patch` has been ported to Bundler itself. Read 
@@ -30,14 +30,15 @@ made.
 
     $ bundle patch
 
-"Conservatively" means it will sort all available versions to prefer the
-latest releases from the current version, then the latest minor releases and
+"Conservatively" means it will sort all available versions to prefer the latest
+patch releases from the current version, then the latest minor releases and
 then the latest major releases.
 
 "Prefer" means that no available versions are removed from consideration*, to
 help ensure a suitable dependency graph can be reconciled. This does mean some
-gems cannot be upgraded or may be upgraded to unexpected versions. NOTE: There is
-a `--strict_updates` option which _will_ remove versions from consideration, see below.
+gems cannot be upgraded or may be upgraded to unexpected versions. NOTE: There
+is a `--strict_updates` option which _will_ remove versions from consideration,
+see below.
 
 _*That's a white-lie. bundler-patch will actually remove from consideration
 any versions older than the currently locked version, which `bundle update`
@@ -45,8 +46,9 @@ will not do. It's not common, but it is possible for `bundle update` to
 regress a gem to an older version, if necessary to reconcile the dependency
 graph._
 
-Gem requirements as defined in the Gemfile will still define what versions are available.
-The new conservative behavior controls the preference order of those versions.
+Gem requirements as defined in the Gemfile will still define what versions are
+available. The new conservative behavior controls the preference order of those
+versions.
 
 For example, if gem 'foo' is locked at 1.0.2, with no gem requirement defined
 in the Gemfile, and versions 1.0.3, 1.0.4, 1.1.0, 1.1.1, 2.0.0 all exist, the
@@ -63,15 +65,15 @@ gems.
     $ bundle patch foo bar
 
   * `-m/--minor-preferred` option will give preference for minor versions over
-    release versions.
+    patch versions.
 
   * `-p/--prefer-minimal` option will reverse the preference order within
-    release, minor, major groups to just 'the next' version. In the prior
+    patch, minor, major groups to just 'the next' version. In the prior
     example, the order of preference changes to "1.0.3, 1.0.4, 1.0.2, 1.1.0,
     1.1.1, 2.0.0"
 
   * `-s/--strict-updates` option will actually remove from consideration
-    versions outside either the current release (or minor version if `-m`
+    versions outside either the current patch version (or minor version if `-m`
     specified). This increases the chances of Bundler being unable to
     reconcile the dependency graph and could raise a `VersionConflict`.
 
@@ -225,10 +227,12 @@ At the end of all of this though, again, the requirements in the Gemfile
 trump anything else, and the most control you have is by modifying those
 in the Gemfile.
 
-## Breaking Changes in 1.0
+## Breaking Changes from 0.x to 1.0
 
 * Command line options with underscores now uses hyphens instead of 
   underscores.
+  
+* Some options have been renamed.
   
 
 ## Development

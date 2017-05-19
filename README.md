@@ -235,8 +235,7 @@ in the Gemfile.
   undocumented).
   
   * `--minor_preferred` => `--minor`
-  * `--prefer_minimal` => `--minimal`
-  * `-p` => `-n`
+  * `--prefer_minimal` => `--minimal` / `-p` => `-n`
   * `--strict_updates` => `--strict`
   
 

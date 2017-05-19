@@ -107,7 +107,7 @@ describe CLI do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          CLI.new.patch(minor_preferred: true, gems_to_update: ['rack'])
+          CLI.new.patch(minor: true, gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '0.9.1'
@@ -125,7 +125,7 @@ describe CLI do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          CLI.new.patch(strict_updates: true)
+          CLI.new.patch(strict: true)
         end
 
         # only diff here would be if a dependency of rack would otherwise go up a minor
@@ -147,7 +147,7 @@ describe CLI do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          CLI.new.patch(strict_updates: true, gems_to_update: ['rack'])
+          CLI.new.patch(strict: true, gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
@@ -165,7 +165,7 @@ describe CLI do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          CLI.new.patch(prefer_minimal: true, gems_to_update: ['rack'])
+          CLI.new.patch(minimal: true, gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '1.4.6'

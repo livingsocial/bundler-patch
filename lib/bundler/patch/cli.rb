@@ -8,9 +8,9 @@ module Bundler::Patch
     def self.execute
       opts = Slop.parse! do
         banner "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: bundle patch [options] [gems-to-update]\n\nbundler-patch attempts to update gems conservatively.\n"
-        on '-m', '--minor-preferred', 'Prefer update to the latest minor.patch version.'
-        on '-p', '--prefer-minimal', 'Prefer minimal version updates over most recent patch (or minor if -m used).'
-        on '-s', '--strict-updates', 'Restrict any gem to be upgraded past most recent patch (or minor if -m used).'
+        on '-m', '--minor', 'Prefer update to the latest minor.patch version.'
+        on '-n', '--minimal', 'Prefer minimal version updates over most recent patch (or minor if -m used).'
+        on '-s', '--strict', 'Restrict any gem to be upgraded past most recent patch (or minor if -m used).'
         on '-l', '--list', 'List vulnerable gems and new version target. No updates will be performed.'
         on '-v', '--vulnerable-gems-only', 'Only update vulnerable gems.'
         on '-a=', '--advisory-db-path=', 'Optional custom advisory db path. `gems` dir will be appended to this path.'
@@ -23,6 +23,9 @@ module Bundler::Patch
         on '--vulnerable_gems_only'
         on '--advisory_db_path='
         on '--ruby_advisory_db_path='
+        on '-p', '--prefer_minimal'
+        on '--minor_preferred'
+        on '--strict_updates'
       end
 
       options = opts.to_hash
@@ -63,13 +66,13 @@ module Bundler::Patch
     end
 
     def normalize_options(options)
-      p options
+      map = {:prefer_minimal => :minimal, :strict_updates => :strict, :minor_preferred => :minor}
       {}.tap do |target|
         options.each_pair do |k, v|
           new_key = k.to_s.gsub('-', '_').to_sym
+          new_key = map[new_key] || new_key
           target[new_key] = v
         end
-        p target
       end
     end
 

@@ -37,7 +37,7 @@ then the latest major releases.
 "Prefer" means that no available versions are removed from consideration*, to
 help ensure a suitable dependency graph can be reconciled. This does mean some
 gems cannot be upgraded or may be upgraded to unexpected versions. NOTE: There
-is a `--strict_updates` option which _will_ remove versions from consideration,
+is a `--strict` option which _will_ remove versions from consideration,
 see below.
 
 _*That's a white-lie. bundler-patch will actually remove from consideration
@@ -64,18 +64,17 @@ gems.
 
     $ bundle patch foo bar
 
-  * `-m/--minor-preferred` option will give preference for minor versions over
-    patch versions.
+  * `-m/--minor` option will give preference for minor versions over patch
+    versions.
 
-  * `-p/--prefer-minimal` option will reverse the preference order within
-    patch, minor, major groups to just 'the next' version. In the prior
-    example, the order of preference changes to "1.0.3, 1.0.4, 1.0.2, 1.1.0,
-    1.1.1, 2.0.0"
+  * `-n/--minimal` option will reverse the preference order within patch,
+    minor, major groups to just 'the next' version. In the prior example, the
+    order of preference changes to "1.0.3, 1.0.4, 1.0.2, 1.1.0, 1.1.1, 2.0.0"
 
-  * `-s/--strict-updates` option will actually remove from consideration
-    versions outside either the current patch version (or minor version if `-m`
-    specified). This increases the chances of Bundler being unable to
-    reconcile the dependency graph and could raise a `VersionConflict`.
+  * `-s/--strict` option will actually remove from consideration versions
+    outside either the current patch version (or minor version if `-m`
+    specified). This increases the chances of Bundler being unable to reconcile
+    the dependency graph and could raise a `VersionConflict`.
 
 `bundler-patch` will also check for vulnerabilities based on the
 `ruby-advisory-db`, but also will _modify_ (if necessary) the gem requirement
@@ -89,8 +88,8 @@ in the Gemfile on vulnerable gems to ensure they can be upgraded.
     final `gems` directory, that will be appended automatically. This can be
     used for flagging necessary updates for custom/internal gems.
     
-  * `-d/--ruby-advisory-db-path` option can override the default path where
-    the ruby-advisory-db repository is checked out into.
+  * `-d/--ruby-advisory-db-path` option can override the default path where the
+    ruby-advisory-db repository is checked out into.
 
 The rules for updating vulnerable gems are almost identical to the general
 `bundler-patch` behavior described above, and abide by the same options (`-m`,
@@ -104,13 +103,13 @@ versions in order to satisfy the dependency graph.
      the listed gem names.
 
 `bundler-patch` can also update the Ruby version listed in .ruby-version and
- the Gemfile if given a list of the latest Ruby versions that are available
- with the following options. Jumps of major versions will not be made at all
- and this feature is designed such that the version will be updated to only
- the next available in the list. If the current version is 2.3.1, and the list
- of `--rubies` is "2.3.2, 2.3.3", then 2.3.2 will be used, not 2.3.3. The 
- intention is for this list to be only the most recent version(s) of Ruby 
- supported, (e.g. "2.1.10, 2.2.7, 2.3.4").
+the Gemfile if given a list of the latest Ruby versions that are available with
+the following options. Jumps of major versions will not be made at all and this
+feature is designed such that the version will be updated to only the next
+available in the list. If the current version is 2.3.1, and the list of
+`--rubies` is "2.3.2, 2.3.3", then 2.3.2 will be used, not 2.3.3. The intention
+is for this list to be only the most recent version(s) of Ruby supported, (e.g.
+"2.1.10, 2.2.7, 2.3.4").
  
    * `-r/--ruby` option indicates updates to Ruby version will be made.
    * `--rubies` a comma-delimited list of target Ruby versions to upgrade to. 
@@ -232,7 +231,13 @@ in the Gemfile.
 * Command line options with underscores now uses hyphens instead of 
   underscores. (Underscore versions will still work, but are undocumented).
   
-* Some options have been renamed.
+* Some options have been renamed. (Old names will still work, but will be
+  undocumented).
+  
+  * `--minor_preferred` => `--minor`
+  * `--prefer_minimal` => `--minimal`
+  * `-p` => `-n`
+  * `--strict_updates` => `--strict`
   
 
 ## Development

@@ -50,7 +50,7 @@ describe ConservativeDefinition do
             @bf.create_spec('bar', '3.2.0'),
             @bf.create_spec('quux', '0.2.0'),
           ], ensure_sources: false, update_gems: 'foo')
-        test_conservative_update('foo', {strict_updates: true, minor_preferred: true}, bundler_def)
+        test_conservative_update('foo', {strict: true, minor: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.3'
         lockfile_spec_version('foo').should == '2.5.0'
@@ -73,11 +73,11 @@ describe ConservativeDefinition do
             @bf.create_spec('quux', '0.2.0'),
           ], ensure_sources: false, update_gems: 'foo') }
 
-        test_conservative_update('foo', {strict_updates: true, minor_preferred: true}, bundler_def.call)
+        test_conservative_update('foo', {strict: true, minor: true}, bundler_def.call)
         lockfile_spec_version('foo').should == '2.4.0'
         lockfile_spec_version('bar').should == '1.1.3'
 
-        test_conservative_update('foo', {strict_updates: false, minor_preferred: true}, bundler_def.call)
+        test_conservative_update('foo', {strict: false, minor: true}, bundler_def.call)
         lockfile_spec_version('foo').should == '2.5.0'
         lockfile_spec_version('bar').should == '2.0.1'
       end
@@ -93,7 +93,7 @@ describe ConservativeDefinition do
             @bf.create_specs('bar', %w(1.1.2 1.1.3 2.0.0 2.0.1 3.2.0)),
             @bf.create_spec('quux', '0.2.0'),
           ], ensure_sources: false, update_gems: 'foo')
-        test_conservative_update('foo', {strict_updates: false, minor_preferred: true}, bundler_def)
+        test_conservative_update('foo', {strict: false, minor: true}, bundler_def)
 
         lockfile_spec_version('foo').should == '2.5.0'
         lockfile_spec_version('bar').should == '2.0.1'
@@ -114,7 +114,7 @@ describe ConservativeDefinition do
             @bf.create_spec('bar', '3.2.0'),
             @bf.create_spec('quux', '0.2.0'),
           ], ensure_sources: false, update_gems: gems_to_update)
-        test_conservative_update(gems_to_update, {strict_updates: true, minor_preferred: true}, bundler_def)
+        test_conservative_update(gems_to_update, {strict: true, minor: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.3'
         lockfile_spec_version('foo').should == '2.5.0'
@@ -135,7 +135,7 @@ describe ConservativeDefinition do
             @bf.create_spec('bar', '3.2.0'),
             @bf.create_spec('quux', '0.2.0'),
           ], ensure_sources: false, update_gems: true)
-        test_conservative_update([], {strict_updates: true, minor_preferred: true}, bundler_def)
+        test_conservative_update([], {strict: true, minor: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.4'
         lockfile_spec_version('foo').should == '2.5.0'
@@ -152,7 +152,7 @@ describe ConservativeDefinition do
             @bf.create_spec('bar', '1.1.3'),
             @bf.create_spec('quux', '0.0.4'),
           ], ensure_sources: false, update_gems: true)
-        test_conservative_update([], {strict_updates: true, minor_preferred: true}, bundler_def)
+        test_conservative_update([], {strict: true, minor: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.3'
         lockfile_spec_version('foo').should == '2.4.0'
@@ -184,13 +184,13 @@ describe ConservativeDefinition do
 
       it 'does not explode when strict' do
         with_bundler_setup do
-          test_conservative_update([], {strict_updates: true}, @bundler_def)
+          test_conservative_update([], {strict: true}, @bundler_def)
         end
       end
 
       it 'does not explode when not strict' do
         with_bundler_setup do
-          test_conservative_update([], {strict_updates: false}, @bundler_def)
+          test_conservative_update([], {strict: false}, @bundler_def)
         end
       end
     end
@@ -206,7 +206,7 @@ describe ConservativeDefinition do
             @bf.create_spec('bar', '2.0.0'),
             @bf.create_spec('quux', '0.0.4'),
           ], ensure_sources: false, update_gems: 'foo')
-        test_conservative_update('foo', {strict_updates: true, minor_preferred: true}, bundler_def)
+        test_conservative_update('foo', {strict: true, minor: true}, bundler_def)
 
         lockfile_spec_version('foo').should == '2.4.0'
         lockfile_spec_version('bar').should == '1.1.3'
@@ -225,7 +225,7 @@ describe ConservativeDefinition do
             @bf.create_spec('bar', '1.1.3'),
             @bf.create_spec('quux', '0.0.4'),
           ], ensure_sources: false, update_gems: 'foo')
-        test_conservative_update('foo', {strict_updates: true}, bundler_def)
+        test_conservative_update('foo', {strict: true}, bundler_def)
 
         lockfile_spec_version('foo').should == '2.4.2'
         lockfile_spec_version('bar').should == '1.1.3'
@@ -244,7 +244,7 @@ describe ConservativeDefinition do
             @bf.create_specs('bar', %w(1.1.2 1.1.3 3.2.0)),
             @bf.create_specs('quux', %w(0.0.4 0.2.0 2.4.0)),
           ], ensure_sources: false, update_gems: %w(foo quux))
-        test_conservative_update(gems_to_update, {strict_updates: false, minor_preferred: true}, bundler_def)
+        test_conservative_update(gems_to_update, {strict: false, minor: true}, bundler_def)
 
         lockfile_spec_version('bar').should == '1.1.3'
         lockfile_spec_version('foo').should == '2.5.0'
@@ -258,7 +258,7 @@ describe ConservativeDefinition do
       gemfile = File.join(@bf.dir, 'Gemfile')
       File.open(gemfile, 'w') { |f| f.puts "source 'https://rubygems.org'" }
       setup_lockfile do
-        bundler_def = test_conservative_update([], {strict_updates: false}, nil)
+        bundler_def = test_conservative_update([], {strict: false}, nil)
         sources = bundler_def.send(:sources)
         sources.rubygems_remotes.length.should_not == 0
       end
@@ -275,7 +275,7 @@ describe ConservativeDefinition do
 
     # make sure the docs match reality
     context 'BUNDLER.md' do
-      def test_it(gems: [], options: {strict_updates: false, minor_preferred: false})
+      def test_it(gems: [], options: {strict: false, minor: false})
         @bf.create_lockfile(gem_dependencies: @gem_deps, source_specs: @lock_source_specs, ensure_sources: false)
 
         bundler_def = @bf.create_definition(gem_dependencies: @gem_deps, source_specs: @source_specs,
@@ -318,7 +318,7 @@ describe ConservativeDefinition do
 
         it 'bundle update --minor' do
           Dir.chdir(@bf.dir) do
-            test_it(options: {minor_preferred: true})
+            test_it(options: {minor: true})
 
             lockfile_spec_version('foo').should == '1.5.1'
             lockfile_spec_version('bar').should == '3.0.0'
@@ -327,7 +327,7 @@ describe ConservativeDefinition do
 
         it 'bundle update --minor --strict' do
           Dir.chdir(@bf.dir) do
-            test_it(options: {minor_preferred: true, strict_updates: true})
+            test_it(options: {minor: true, strict: true})
 
             lockfile_spec_version('foo').should == '1.5.0'
             lockfile_spec_version('bar').should == '2.1.1'
@@ -336,7 +336,7 @@ describe ConservativeDefinition do
 
         it 'bundle update --patch --strict' do
           Dir.chdir(@bf.dir) do
-            test_it(options: {minor_preferred: false, strict_updates: true})
+            test_it(options: {minor: false, strict: true})
 
             lockfile_spec_version('foo').should == '1.4.4'
             lockfile_spec_version('bar').should == '2.0.4'

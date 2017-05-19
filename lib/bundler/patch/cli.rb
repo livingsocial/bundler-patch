@@ -8,13 +8,13 @@ module Bundler::Patch
     def self.execute
       opts = Slop.parse! do
         banner "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: bundle patch [options] [gems_to_update]\n\nbundler-patch attempts to update gems conservatively.\n"
-        on '-m', '--minor_preferred', 'Prefer update to the latest minor.release version.'
-        on '-p', '--prefer_minimal', 'Prefer minimal version updates over most recent release (or minor if -m used).'
-        on '-s', '--strict_updates', 'Restrict any gem to be upgraded past most recent release (or minor if -m used).'
+        on '-m', '--minor-preferred', 'Prefer update to the latest minor.release version.'
+        on '-p', '--prefer-minimal', 'Prefer minimal version updates over most recent release (or minor if -m used).'
+        on '-s', '--strict-updates', 'Restrict any gem to be upgraded past most recent release (or minor if -m used).'
         on '-l', '--list', 'List vulnerable gems and new version target. No updates will be performed.'
-        on '-v', '--vulnerable_gems_only', 'Only update vulnerable gems.'
-        on '-a=', '--advisory_db_path=', 'Optional custom advisory db path. `gems` dir will be appended to this path.'
-        on '-d=', '--ruby_advisory_db_path=', 'Optional path for ruby advisory db. `gems` dir will be appended to this path.'
+        on '-v', '--vulnerable-gems-only', 'Only update vulnerable gems.'
+        on '-a=', '--advisory-db-path=', 'Optional custom advisory db path. `gems` dir will be appended to this path.'
+        on '-d=', '--ruby-advisory-db-path=', 'Optional path for ruby advisory db. `gems` dir will be appended to this path.'
         on '-r', '--ruby', 'Update Ruby version in related files.'
         on '--rubies=', 'Supported Ruby versions. Comma delimited or multiple switches.', as: Array, delimiter: ','
         on '-h', 'Show this help'

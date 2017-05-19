@@ -62,15 +62,15 @@ gems.
 
     $ bundle patch foo bar
 
-  * `-m/--minor_preferred` option will give preference for minor versions over
+  * `-m/--minor-preferred` option will give preference for minor versions over
     release versions.
 
-  * `-p/--prefer_minimal` option will reverse the preference order within
+  * `-p/--prefer-minimal` option will reverse the preference order within
     release, minor, major groups to just 'the next' version. In the prior
     example, the order of preference changes to "1.0.3, 1.0.4, 1.0.2, 1.1.0,
     1.1.1, 2.0.0"
 
-  * `-s/--strict_updates` option will actually remove from consideration
+  * `-s/--strict-updates` option will actually remove from consideration
     versions outside either the current release (or minor version if `-m`
     specified). This increases the chances of Bundler being unable to
     reconcile the dependency graph and could raise a `VersionConflict`.
@@ -82,10 +82,13 @@ in the Gemfile on vulnerable gems to ensure they can be upgraded.
   * `-l/--list` option will just list vulnerable gems. No updates will be
     performed.
 
-  * `-a/--advisory_db_path` option can provide the path to an additional
+  * `-a/--advisory-db-path` option can provide the path to an additional
     custom ruby-advisory-db styled directory. The path should not include the
     final `gems` directory, that will be appended automatically. This can be
     used for flagging necessary updates for custom/internal gems.
+    
+  * `-d/--ruby-advisory-db-path` option can override the default path where
+    the ruby-advisory-db repository is checked out into.
 
 The rules for updating vulnerable gems are almost identical to the general
 `bundler-patch` behavior described above, and abide by the same options (`-m`,
@@ -93,11 +96,22 @@ The rules for updating vulnerable gems are almost identical to the general
 a patched version of the gem. Keep in mind Bundler may still choose unexpected
 versions in order to satisfy the dependency graph.
 
-   * `-v/--vulnerable_gems_only` option will automatically restrict the gems
+   * `-v/--vulnerable-gems-only` option will automatically restrict the gems
      to update list to currently vulnerable gems. If a combination of `-v` and
      a list of gem names are passed, the `-v` option is ignored in favor of
      the listed gem names.
 
+`bundler-patch` can also update the Ruby version listed in .ruby-version and
+ the Gemfile if given a list of the latest Ruby versions that are available
+ with the following options. Jumps of major versions will not be made at all
+ and this feature is designed such that the version will be updated to only
+ the next available in the list. If the current version is 2.3.1, and the list
+ of `--rubies` is "2.3.2, 2.3.3", then 2.3.2 will be used, not 2.3.3. The 
+ intention is for this list to be only the most recent version(s) of Ruby 
+ supported, (e.g. "2.1.10, 2.2.7, 2.3.4").
+ 
+   * `-r/--ruby` option indicates updates to Ruby version will be made.
+   * `--rubies` a comma-delimited list of target Ruby versions to upgrade to. 
 
 ## Examples
 
@@ -166,7 +180,7 @@ In case 7, the `-p` and `-m` switches allow both to move to just the next
 available minor version.
 
 
-### Troubleshooting
+## Troubleshooting
 
 First, make sure the current `bundle` command itself runs to completion on its
 own without any problems.
@@ -211,17 +225,13 @@ At the end of all of this though, again, the requirements in the Gemfile
 trump anything else, and the most control you have is by modifying those
 in the Gemfile.
 
+## Breaking Changes in 1.0
+
+* Command line options with underscores now uses hyphens instead of 
+  underscores.
+  
 
 ## Development
-
-### Status
-
-0.x versions are subject to breaking changes, there's a fair amount of
-experimenting going on.
-
-We'd love to get real world scenarios where things don't go as planned to help
-flesh out varying details of what many believe a conservative update should
-be.
 
 ### How To
 

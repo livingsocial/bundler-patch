@@ -7,7 +7,7 @@ module Bundler::Patch
   class CLI
     def self.execute
       opts = Slop.parse! do
-        banner "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: bundle patch [options] [gems_to_update]\n\nbundler-patch attempts to update gems conservatively.\n"
+        banner "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: bundle patch [options] [gems-to-update]\n\nbundler-patch attempts to update gems conservatively.\n"
         on '-m', '--minor-preferred', 'Prefer update to the latest minor.patch version.'
         on '-p', '--prefer-minimal', 'Prefer minimal version updates over most recent patch (or minor if -m used).'
         on '-s', '--strict-updates', 'Restrict any gem to be upgraded past most recent patch (or minor if -m used).'
@@ -19,6 +19,10 @@ module Bundler::Patch
         on '--rubies=', 'Supported Ruby versions. Comma delimited or multiple switches.', as: Array, delimiter: ','
         on '-h', 'Show this help'
         on '--help', 'Show README.md'
+        # will be stripped in help display and normalized to hyphenated options
+        on '--vulnerable_gems_only'
+        on '--advisory_db_path='
+        on '--ruby_advisory_db_path='
       end
 
       options = opts.to_hash
@@ -31,8 +35,9 @@ module Bundler::Patch
       CLI.new.patch(options)
     end
 
-    def self.show_help(opts)
-      puts opts
+    def self.show_help(slop)
+      slop.options.delete_if { |o| o.long =~ /_/ }
+      puts slop
       exit
     end
 
@@ -48,11 +53,24 @@ module Bundler::Patch
     def patch(options={})
       Bundler.ui = Bundler::UI::Shell.new
 
+      normalize_options(options)
+
       return list(options) if options[:list]
 
       patch_ruby(options[:rubies]) if options[:ruby]
 
       patch_gems(options)
+    end
+
+    def normalize_options(options)
+      p options
+      {}.tap do |target|
+        options.each_pair do |k, v|
+          new_key = k.to_s.gsub('-', '_').to_sym
+          target[new_key] = v
+        end
+        p target
+      end
     end
 
     private

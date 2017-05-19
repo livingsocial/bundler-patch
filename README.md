@@ -230,7 +230,7 @@ in the Gemfile.
 ## Breaking Changes from 0.x to 1.0
 
 * Command line options with underscores now uses hyphens instead of 
-  underscores.
+  underscores. (Underscore versions will still work, but are undocumented).
   
 * Some options have been renamed.
   

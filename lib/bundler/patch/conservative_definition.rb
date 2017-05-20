@@ -105,6 +105,7 @@ module Bundler::Patch
 
     def initialize(gem_patches)
       @gem_patches = Array(gem_patches)
+      STDERR.puts "Unlocked gems: #{unlocking_description}" if ENV['DEBUG_PATCH_RESOLVER']
     end
 
     def to_bundler_definition
@@ -125,6 +126,10 @@ module Bundler::Patch
 
     def unlocking_gem?(gem_name)
       unlocking_all? || to_gem_names.include?(gem_name)
+    end
+
+    def unlocking_description
+      unlocking_all? ? 'ALL' : to_gem_names.sort.join(', ')
     end
   end
 end

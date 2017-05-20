@@ -8,9 +8,16 @@ from the current version, over the latest minor releases or the latest major
 releases. This is somewhat opposite from `bundle update` which prefers
 newest/major versions first.
 
-Works with Bundler 1.9 and higher. Starting with Bundler 1.13, much of the
-core behavior in `bundler-patch` has been ported to Bundler itself. Read 
-[BUNDLER.md](BUNDLER.md) for more information.
+Works with Bundler 1.9 and higher. Starting with Bundler 1.14 (undocumented in
+1.13), much of the core behavior in `bundler-patch` has been ported to Bundler
+itself. See [Patch Level
+Options](http://bundler.io/v1.14/man/bundle-update.1.html#PATCH-LEVEL-OPTIONS),
+[Overlapping
+Dependencies](http://bundler.io/v1.14/man/bundle-update.1.html#OVERLAPPING-DEPENDENCIES) 
+in the `bundle update` docs, also [Patch Level 
+Options](http://bundler.io/v1.14/man/bundle-outdated.1.html#PATCH-LEVEL-OPTIONS)
+in the `bundle outdated` docs.
+
 
 [![Build Status](https://travis-ci.org/livingsocial/bundler-patch.svg?branch=master)](https://travis-ci.org/livingsocial/bundler-patch)
 
@@ -93,7 +100,7 @@ in the Gemfile on vulnerable gems to ensure they can be upgraded.
 
 The rules for updating vulnerable gems are almost identical to the general
 `bundler-patch` behavior described above, and abide by the same options (`-m`,
-`-p`, and `-s`) though there are some tweaks to encourage getting to at least
+`-n`, and `-s`) though there are some tweaks to encourage getting to at least
 a patched version of the gem. Keep in mind Bundler may still choose unexpected
 versions in order to satisfy the dependency graph.
 
@@ -122,8 +129,8 @@ is for this list to be only the most recent version(s) of Ruby supported, (e.g.
 |-------------|---------|-----------------------------|----------|--------|
 | foo         | 1.4.3   | 1.4.4, 1.4.5, 1.5.0, 1.5.1  |          | 1.4.5  |
 | foo         | 1.4.3   | 1.4.4, 1.4.5, 1.5.0, 1.5.1  | -m       | 1.5.1  |
-| foo         | 1.4.3   | 1.4.4, 1.4.5, 1.5.0, 1.5.1  | -p       | 1.4.4  |
-| foo         | 1.4.3   | 1.4.4, 1.4.5, 1.5.0, 1.5.1  | -m -p    | 1.5.0  |
+| foo         | 1.4.3   | 1.4.4, 1.4.5, 1.5.0, 1.5.1  | -n       | 1.4.4  |
+| foo         | 1.4.3   | 1.4.4, 1.4.5, 1.5.0, 1.5.1  | -m -n    | 1.5.0  |
 
 ### Two Gems
 
@@ -146,21 +153,24 @@ Gemfile.lock:
       bar (~> 2.0)
     bar (2.0.3)
 
-| # | Command Line              | Result                    |
-|---|---------------------------|---------------------------|
-| 1 | bundle patch              | 'foo 1.4.5', 'bar 2.1.1'  |
-| 2 | bundle patch foo          | 'foo 1.4.4', 'bar 2.0.3'  |
-| 3 | bundle patch -m           | 'foo 1.5.1', 'bar 3.0.0'  |
-| 4 | bundle patch -m -s        | 'foo 1.5.0', 'bar 2.1.1'  |
-| 5 | bundle patch -s           | 'foo 1.4.4', 'bar 2.0.4'  |
-| 6 | bundle patch -p           | 'foo 1.4.4', 'bar 2.0.4'  |
-| 7 | bundle patch -p -m        | 'foo 1.5.0', 'bar 2.1.0'  |
+| # | Command Line                    | Result                    |
+|---|---------------------------------|---------------------------|
+| 1 | bundle patch                    | 'foo 1.4.5', 'bar 2.1.1'  |
+| 2 | bundle patch foo                | 'foo 1.4.5', 'bar 2.1.1'  |
+| 3 | bundle patch --minor            | 'foo 1.5.1', 'bar 3.0.0'  |
+| 4 | bundle patch --minor --strict   | 'foo 1.5.0', 'bar 2.1.1'  |
+| 5 | bundle patch --strict           | 'foo 1.4.4', 'bar 2.0.4'  |
+| 6 | bundle patch --minimal          | 'foo 1.4.4', 'bar 2.0.4'  |
+| 7 | bundle patch --strict foo       | 'foo 1.4.4', 'bar 2.0.3'  |
+| 8 | bundle patch --minimal --minor  | 'foo 1.5.0', 'bar 2.1.0'  |
 
 In case 1, `bar` is upgraded to 2.1.1, a minor version increase, because the
 dependency from `foo` 1.4.5 required it.
 
-In case 2, only `foo` is unlocked, so `foo` can only go to 1.4.4 to maintain
-the dependency to `bar`.
+In case 2, `bar` still moves because it is not a _declared_ dependency in the
+Gemfile, but it is a dependency of `foo` and is therefore free to move if 
+`foo`'s requirement of `bar` changes. If `bar` appeared in the Gemfile, then 
+it would stay put in this case and `foo` would only move to 1.4.4. 
 
 In case 3, `bar` goes up a whole major release, because a minor increase is
 preferred now for `foo`, and when it goes to 1.5.1, it requires 3.0.0 of
@@ -174,10 +184,14 @@ In case 5, both `foo` and `bar` have any minor or major increments removed
 from consideration because of the `-s` strict flag, so the most they can
 move is up to 1.4.4 and 2.0.4.
 
-In case 6, the prefer minimal switch `-p` means they only increment to the
+In case 6, the prefer minimal switch `-n` means they only increment to the
 next available release.
 
-In case 7, the `-p` and `-m` switches allow both to move to just the next
+In case 7, the `-s` strict flag removes any `bar` 2.1 versions from
+consideration, which restricts `foo` to 1.4.4 at latest. `bar` is not unlocked
+and therefore doesn't move.
+
+In case 8, the `-n` and `-m` switches allow both to move to just the next
 available minor version.
 
 
@@ -238,6 +252,9 @@ in the Gemfile.
   * `--prefer_minimal` => `--minimal` / `-p` => `-n`
   * `--strict_updates` => `--strict`
   
+In the "Two Gems" cases documented above, case 2 was _wrong_ (the docs were
+incorrect, there was no bug in the code). Case 2 has been corrected and a
+new similar case has been inserted towards the end of the table. 
 
 ## Development
 

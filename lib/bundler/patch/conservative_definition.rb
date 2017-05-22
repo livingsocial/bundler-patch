@@ -72,9 +72,9 @@ module Bundler::Patch
       @bundler_def ||= Bundler.definition(@gems_to_update.to_bundler_definition)
       @bundler_def.extend ConservativeDefinition
       @bundler_def.gems_to_update = @gems_to_update
-      @bundler_def.strict = @options[:strict_updates]
-      @bundler_def.minor_preferred = @options[:minor_preferred]
-      @bundler_def.prefer_minimal = @options[:prefer_minimal]
+      @bundler_def.strict = @options[:strict]
+      @bundler_def.minor_preferred = @options[:minor]
+      @bundler_def.prefer_minimal = @options[:minimal]
       fixup_empty_remotes if @gems_to_update.to_bundler_definition === true
       @bundler_def
     end
@@ -105,6 +105,7 @@ module Bundler::Patch
 
     def initialize(gem_patches)
       @gem_patches = Array(gem_patches)
+      STDERR.puts "Unlocked gems: #{unlocking_description}" if ENV['DEBUG_PATCH_RESOLVER']
     end
 
     def to_bundler_definition
@@ -125,6 +126,10 @@ module Bundler::Patch
 
     def unlocking_gem?(gem_name)
       unlocking_all? || to_gem_names.include?(gem_name)
+    end
+
+    def unlocking_description
+      unlocking_all? ? 'ALL' : to_gem_names.sort.join(', ')
     end
   end
 end

@@ -70,6 +70,7 @@ module Bundler::Patch
   class GemPatch
     include Comparable
 
+    # TODO: requested_version is better name than new_version?
     attr_reader :gem_name, :old_version, :new_version, :patched_versions
 
     def initialize(gem_name:, old_version: nil, new_version: nil, patched_versions: nil)

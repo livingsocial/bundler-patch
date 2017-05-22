@@ -107,7 +107,7 @@ describe CLI do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          CLI.new.patch(minor_preferred: true, gems_to_update: ['rack'])
+          CLI.new.patch(minor: true, gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '0.9.1'
@@ -125,7 +125,7 @@ describe CLI do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          CLI.new.patch(strict_updates: true)
+          CLI.new.patch(strict: true)
         end
 
         # only diff here would be if a dependency of rack would otherwise go up a minor
@@ -147,7 +147,7 @@ describe CLI do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          CLI.new.patch(strict_updates: true, gems_to_update: ['rack'])
+          CLI.new.patch(strict: true, gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
@@ -165,7 +165,7 @@ describe CLI do
 
         Bundler.with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
-          CLI.new.patch(prefer_minimal: true, gems_to_update: ['rack'])
+          CLI.new.patch(minimal: true, gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '1.4.6'
@@ -302,11 +302,16 @@ describe CLI do
   end
 
   context 'ruby patch' do
+    before do
+      @current_ruby_api = RbConfig::CONFIG['ruby_version']
+      @current_ruby = RUBY_VERSION
+    end
+
     it 'update mri ruby' do
       Dir.chdir(@bf.dir) do
-        File.open('Gemfile', 'w') { |f| f.puts "ruby '2.3.0'" }
-        CLI.new.patch(ruby: true, rubies: ['2.3.3'])
-        File.read('Gemfile').chomp.should == "ruby '2.3.3'"
+        File.open('Gemfile', 'w') { |f| f.puts "ruby '#{@current_ruby_api}'" }
+        CLI.new.patch(ruby: true, rubies: [@current_ruby])
+        File.read('Gemfile').chomp.should == "ruby '#{@current_ruby}'"
       end
     end
   end

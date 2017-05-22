@@ -7,18 +7,25 @@ module Bundler::Patch
   class CLI
     def self.execute
       opts = Slop.parse! do
-        banner "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: bundle patch [options] [gems_to_update]\n\nbundler-patch attempts to update gems conservatively.\n"
-        on '-m', '--minor_preferred', 'Prefer update to the latest minor.release version.'
-        on '-p', '--prefer_minimal', 'Prefer minimal version updates over most recent release (or minor if -m used).'
-        on '-s', '--strict_updates', 'Restrict any gem to be upgraded past most recent release (or minor if -m used).'
+        banner "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: bundle patch [options] [gems-to-update]\n\nbundler-patch attempts to update gems conservatively.\n"
+        on '-m', '--minor', 'Prefer update to the latest minor.patch version.'
+        on '-n', '--minimal', 'Prefer minimal version updates over most recent patch (or minor if -m used).'
+        on '-s', '--strict', 'Restrict any gem to be upgraded past most recent patch (or minor if -m used).'
         on '-l', '--list', 'List vulnerable gems and new version target. No updates will be performed.'
-        on '-v', '--vulnerable_gems_only', 'Only update vulnerable gems.'
-        on '-a=', '--advisory_db_path=', 'Optional custom advisory db path. `gems` dir will be appended to this path.'
-        on '-d=', '--ruby_advisory_db_path=', 'Optional path for ruby advisory db. `gems` dir will be appended to this path.'
+        on '-v', '--vulnerable-gems-only', 'Only update vulnerable gems.'
+        on '-a=', '--advisory-db-path=', 'Optional custom advisory db path. `gems` dir will be appended to this path.'
+        on '-d=', '--ruby-advisory-db-path=', 'Optional path for ruby advisory db. `gems` dir will be appended to this path.'
         on '-r', '--ruby', 'Update Ruby version in related files.'
         on '--rubies=', 'Supported Ruby versions. Comma delimited or multiple switches.', as: Array, delimiter: ','
         on '-h', 'Show this help'
         on '--help', 'Show README.md'
+        # will be stripped in help display and normalized to hyphenated options
+        on '--vulnerable_gems_only'
+        on '--advisory_db_path='
+        on '--ruby_advisory_db_path='
+        on '-p', '--prefer_minimal'
+        on '--minor_preferred'
+        on '--strict_updates'
       end
 
       options = opts.to_hash
@@ -31,8 +38,9 @@ module Bundler::Patch
       CLI.new.patch(options)
     end
 
-    def self.show_help(opts)
-      puts opts
+    def self.show_help(slop)
+      slop.options.delete_if { |o| o.long =~ /_/ }
+      puts slop
       exit
     end
 
@@ -48,11 +56,24 @@ module Bundler::Patch
     def patch(options={})
       Bundler.ui = Bundler::UI::Shell.new
 
+      normalize_options(options)
+
       return list(options) if options[:list]
 
       patch_ruby(options[:rubies]) if options[:ruby]
 
       patch_gems(options)
+    end
+
+    def normalize_options(options)
+      map = {:prefer_minimal => :minimal, :strict_updates => :strict, :minor_preferred => :minor}
+      {}.tap do |target|
+        options.each_pair do |k, v|
+          new_key = k.to_s.gsub('-', '_').to_sym
+          new_key = map[new_key] || new_key
+          target[new_key] = v
+        end
+      end
     end
 
     private

@@ -225,12 +225,8 @@ logic to the resolution process to achieve its goals. If there's a bug
 involved, it's almost certainly in the `bundler-patch` code as Bundler has
 been around a long time and has thorough testing and real world experience.
 
-When used with versions of Bundler prior to 1.13, `bundler-patch` can dump
-its own debug output, potentially helpful, with `DEBUG_PATCH_RESOLVER`.
-
-(When used with version 1.13+ of Bundler, `bundler-patch` only adds some
-additional sorting behavior, the result of which will be included in the
-`DEBUG_RESOLVER` output and `DEBUG_PATCH_RESOLVER` is not used).
+`bundler-patch` can dump its own debug output, potentially helpful, with 
+`DEBUG_PATCH_RESOLVER`.
 
 To get additional Bundler debugging output, enable the `DEBUG` env variable.
 This will include all of the details of the downloading the full dependency

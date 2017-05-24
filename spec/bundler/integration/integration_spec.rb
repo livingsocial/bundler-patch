@@ -1,10 +1,6 @@
 require_relative '../../spec_helper'
 
 class BundlerFixture
-  def gemfile_filename
-    File.join(@dir, 'Gemfile')
-  end
-
   def gemfile_contents
     File.read(gemfile_filename)
   end

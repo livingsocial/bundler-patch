@@ -19,44 +19,9 @@ module Bundler::Patch
         on '--rubies=', 'Supported Ruby versions. Comma delimited or multiple switches.', as: Array, delimiter: ','
         on '-g=', '--gemfile=', 'Optional Gemfile to execute against. Defaults to Gemfile in current directory.'
         on '--use_target_ruby', 'Optionally attempt to use Ruby version of target bundle specified in --gemfile.'
-
-        # Does --gemfile option of bundle install obey the bundle config of the dir the Gemfile is in?
-        # A> Yes, at least the path. But the runtime involved ... no. That's not in there. Even if
-        #    ruby version is specified in the Gemfile. Which makes sense, that's a big feature, esp.
-        #    since rvm, rbenv, chruby, system rubies ... lots of, too many, options to support.
-
-        # The goal for bundler-patch is to have it match the bundle path AND the Ruby runtime of the
-        # directory specified in the --gemfile argument.
-        #
-        # To properly update another bundle, bundler-patch _does_ need to live in the same bundle
-        # location because of it's _dependencies_ (it's not a self-contained gem), and it can't both
-        # act on another bundle location AND find its own dependencies in a separate bundle location.
-        #
-        # What about the Ruby runtime then?
-        #
-        # Is depending on .ruby-version legit?
-        # A> Legit enough for this sort of feature?
-        #
-        # Could it also parse ruby version out of Gemfile?
-        # A> Sure. And then finding the different ruby would have to be based on presumptions like versions being
-        #    in sibling directories.
-        #
-        #    Gimme the Gemfile. I'll look for GEM_HOME and Ruby bin. If I can deduce that, then:
-        #    - install bundler-patch into that location
-        #    - re-execute bundler-patch with same options but against the other Ruby binary and
-        #      cd to the --gemfile directory so it will operate against the Gemfile there.
-        #
-        # What about cross engine support? The bundle config path of the target Gemfile SHOULD give
-        # us engine and version, right?
-        # A> The path itself won't, but navigating to that path ... well, then it gets squirrelly.
-        #
-        # Is this an acceptable action security-wise, to auto-install itself into a different bundle
-        # location? If it's questionable, should we prompt the user for permission?
-        #
-        # Will need to support a Gemfile of a different name as well.
-
         on '-h', 'Show this help'
         on '--help', 'Show README.md'
+
         # will be stripped in help display and normalized to hyphenated options
         on '--vulnerable_gems_only'
         on '--advisory_db_path='
@@ -124,7 +89,7 @@ module Bundler::Patch
       if custom_gemfile && !custom_gemfile.empty?
         ENV['BUNDLE_GEMFILE'] = File.expand_path(custom_gemfile)
         dir, gemfile = [File.dirname(custom_gemfile), File.basename(custom_gemfile)]
-        target_bundle = TargetBundle.new(dir: dir, gemfile: gemfile)
+        target_bundle = TargetBundle.new(dir: dir, gemfile: gemfile, use_target_ruby: options[:use_target_ruby])
         options[:target] = target_bundle
       else
         options[:target] = TargetBundle.new

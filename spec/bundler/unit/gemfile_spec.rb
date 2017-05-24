@@ -160,7 +160,7 @@ describe Gemfile do
           #
           # Compound forms aren't common, and supporting a more intelligent upgrade when the
           # patch is still inside the req is probably not worth the trouble.
-          File.read('Gemfile').should have_line("gem 'foo', '>= 1.2.0', '< 1.3.0'")
+          File.read('Gemfile').should have_line("gem 'foo', '< 1.3.0', '>= 1.2.0'")
         end
       end
 

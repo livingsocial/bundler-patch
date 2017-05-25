@@ -1,11 +1,5 @@
 require_relative '../../spec_helper'
 
-class BundlerFixture
-  def gemfile_contents
-    File.read(gemfile_filename)
-  end
-end
-
 describe CLI do
   before do
     setup_bundler_fixture
@@ -13,12 +7,11 @@ describe CLI do
 
   def setup_bundler_fixture(gemfile: 'Gemfile')
     @bf = BundlerFixture.new(dir: File.expand_path('../../../tmp', __dir__), gemfile: gemfile)
-    ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
   end
 
   after do
-    ENV['BUNDLE_GEMFILE'] = nil
     @bf.clean_up
+    ENV['BUNDLE_GEMFILE'] = nil
   end
 
   def lockfile_spec_version(gem_name)

@@ -23,10 +23,15 @@ describe TargetBundle do
     end
   end
 
-  it 'should find ruby version from Gemfile' do
+  it 'should find ruby version from Gemfile or lockfile' do
+    # CI will run on older Bundler versions to verify this
     gemfile_create(RUBY_VERSION) do |dir|
       tb = TargetBundle.new(dir: dir, use_target_ruby: true)
-      tb.find_target_ruby_version.to_s.should == "ruby #{RUBY_VERSION}"
+      if TargetBundle.bundler_version_or_higher('1.12.0')
+        tb.find_target_ruby_version.to_s.should == "ruby #{RUBY_VERSION}p#{RUBY_PATCHLEVEL}"
+      else
+        tb.find_target_ruby_version.to_s.should == "ruby #{RUBY_VERSION}"
+      end
     end
   end
 end

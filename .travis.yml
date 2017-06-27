@@ -22,8 +22,8 @@ matrix:
     - rvm: 2.3.4
       env: BUNDLER_TEST_VERSION=1.14.6
     - rvm: 2.1.10
-      env: BUNDLER_TEST_VERSION=1.15.0
+      env: BUNDLER_TEST_VERSION=1.15.1
     - rvm: 2.2.7
-      env: BUNDLER_TEST_VERSION=1.15.0
+      env: BUNDLER_TEST_VERSION=1.15.1
     - rvm: 2.3.4
-      env: BUNDLER_TEST_VERSION=1.15.0
+      env: BUNDLER_TEST_VERSION=1.15.1

@@ -47,4 +47,20 @@ describe TargetBundle do
       fail
     end
   end
+
+  it 'should find ruby version in .ruby-version file if Bundler too old' do
+    if TargetBundle.bundler_version_or_higher('1.12.0')
+      pending 'test irrelevant in versions >= 1.12.0'
+      fail
+    else
+      rv = File.join(@tmp_dir, '.ruby-version')
+      File.open(rv, 'w') { |f| f.puts '2.3.4' }
+      gemfile_create(nil) do |dir|
+        tb = TargetBundle.new(dir: dir, use_target_ruby: true)
+        tb.find_target_ruby_version.to_s.should == '2.3.4'
+      end
+    end
+  end
+
+  it 'should find ruby version in .ruby-version file if Bundler not too old but somehow does not have it'
 end

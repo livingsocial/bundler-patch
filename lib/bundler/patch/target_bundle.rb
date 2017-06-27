@@ -19,12 +19,23 @@ class TargetBundle
   #
   # Second, look bin path presuming version is in current path.
   def find_target_ruby_version
-    if TargetBundle.bundler_version_or_higher('1.12.0')
-      lockfile_parser = Bundler::LockfileParser.new(Bundler.read_file(lockfile_name))
-      lockfile_parser.ruby_version
-    else
-      Bundler::Definition.build(gemfile_name, lockfile_name, nil).ruby_version
-    end
+    # TODO: if directly provided (via command line switch?)
+    result = if TargetBundle.bundler_version_or_higher('1.12.0')
+               lockfile_parser = Bundler::LockfileParser.new(Bundler.read_file(lockfile_name))
+               lockfile_parser.ruby_version
+             end
+
+    result ||= if File.exist?(ruby_version_filename)
+                 File.read('.ruby-version').chomp
+               else
+                 Bundler::Definition.build(gemfile_name, lockfile_name, nil).ruby_version
+               end
+
+    result
+  end
+
+  def ruby_version_filename
+    File.join(@dir, '.ruby-version')
   end
 
   def gemfile_name
@@ -36,7 +47,7 @@ class TargetBundle
   end
 
   def find_target_ruby_bin
-
+    # RbConfig::CONFIG['bindir']
   end
 
   def find_target_gem_home

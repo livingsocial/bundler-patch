@@ -63,6 +63,8 @@ module Bundler::Patch
 
       process_gemfile_option(options)
 
+      # if options[:target].use_target_ruby then we need to shell out to another bundler-patch, right?
+
       return list(options) if options[:list]
 
       patch_ruby(options) if options[:ruby]

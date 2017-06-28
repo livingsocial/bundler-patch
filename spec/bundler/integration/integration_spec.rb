@@ -1,5 +1,5 @@
 require_relative '../../spec_helper'
-
+  
 describe CLI do
   before do
     setup_bundler_fixture
@@ -21,6 +21,7 @@ describe CLI do
   context 'integration tests' do
     it 'single gem with vulnerability' do
       Dir.chdir(@bf.dir) do
+        # TODO: tap then create is a no-op. Replace with just create. And it returns a @bf instance, so no need for two?
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {rack: nil, addressable: nil},
@@ -48,8 +49,15 @@ describe CLI do
         CLI.new.patch(gems_to_update: ['rack'], gemfile: File.join(@bf.dir, 'Gemfile'))
       end
 
+      # TODO: this still uses the local bundle config however.
+      # Is this because of Bundler.root usage in the call to Bundler::Installer.install
+      # Does Bundler itself shift to the appropriate config when passed a different gemfile?
+      # It appears to ... so - this is borken
+
       lockfile_spec_version('rack').should == '1.4.7'
       lockfile_spec_version('addressable').should == '2.1.1'
+      
+      fail "Doesn't take into account the bundle config of target."
     end
 
     it 'all gems, one with vulnerability' do

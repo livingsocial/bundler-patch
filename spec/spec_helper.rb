@@ -19,4 +19,8 @@ class BundlerFixture
   def gemfile_contents
     File.read(gemfile_filename)
   end
+
+  def lockfile_spec_version(gem_name)
+    parsed_lockfile_spec(gem_name).version.to_s
+  end
 end

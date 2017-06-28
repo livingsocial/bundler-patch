@@ -62,5 +62,5 @@ describe TargetBundle do
     end
   end
 
-  it 'should find ruby version in .ruby-version file if Bundler not too old but somehow does not have it'
+  it 'should find ruby version in .ruby-version file if Bundler not too old but somehow does not have it' # maybe
 end

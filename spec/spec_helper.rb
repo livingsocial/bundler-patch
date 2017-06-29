@@ -37,6 +37,8 @@ def bundler_patch(options)
   opts = options.map do |k, v|
     if k == :gems_to_update
       v.join(' ')
+    elsif v.class == TrueClass
+      "--#{k}"
     else
       "--#{k} #{v}"
     end

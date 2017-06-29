@@ -24,3 +24,10 @@ class BundlerFixture
     parsed_lockfile_spec(gem_name).version.to_s
   end
 end
+
+def with_clean_env
+  Bundler.with_clean_env do
+    ENV['GEM_PATH'] = nil if ENV['GEM_PATH'] == '' # bug fix for clean_env?
+    yield
+  end
+end

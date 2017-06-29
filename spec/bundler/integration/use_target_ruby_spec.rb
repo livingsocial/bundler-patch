@@ -24,9 +24,9 @@ describe 'integration tests' do
       bf = GemfileLockFixture.create(dir: @tmp_dir,
                                      gems: {rack: nil, addressable: nil},
                                      locks: {rack: '1.4.1', addressable: '2.1.1'},
-                                     ruby_version: RbConfig::CONFIG['ruby_version'])
+                                     ruby_version: RUBY_VERSION)
 
-      Bundler.with_clean_env do
+      with_clean_env do
         CLI.new.patch(gems_to_update: ['rack'],
                       gemfile: File.join(@tmp_dir, 'Gemfile'),
                       use_target_ruby: true)
@@ -43,7 +43,7 @@ describe 'integration tests' do
                                      # TODO - need programmatic way to work with an old ruby and make sure TRAVIS has it installed
                                      ruby_version: '2.2.4')
 
-      Bundler.with_clean_env do
+      with_clean_env do
         ENV['DEBUG'] = '1'
         puts `bundle config`
         CLI.new.patch(gems_to_update: ['rack'],
@@ -54,9 +54,9 @@ describe 'integration tests' do
       bf.lockfile_spec_version('rack').should == '1.4.7'
       bf.lockfile_spec_version('addressable').should == '2.1.1'
 
-      Bundler.with_clean_env do
+      with_clean_env do
         Dir.chdir(@tmp_dir) do
-          puts output=`DEBUG=1 bundle list`
+          puts output=`bundle list`
           puts @tmp_dir
           output.should match /rack/
           output.should match /1\.4\.7/

@@ -28,7 +28,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(gems_to_update: ['rack'])
         end
@@ -38,26 +38,30 @@ describe CLI do
       end
     end
 
+    # There's SO much global state in SO any nooks and crannies, even with 1.15 Bundler.reset! and additional hacks
+    # like Gem.instance_variable_set("@paths", nil) (which I tried below), there's just no good way to inline a
+    # call back into Bundler to make it clean. with_clean_env plus backtick seems to be the best.
     it 'single gem with vulnerability with --gemfile option' do
-      GemfileLockFixture.tap do |fix|
-        fix.create(dir: @bf.dir,
-                   gems: {rack: nil, addressable: nil},
-                   locks: {rack: '1.4.1', addressable: '2.1.1'})
-      end
+      bf = GemfileLockFixture.create(dir: @bf.dir,
+                                     gems: {rack: nil, addressable: nil},
+                                     locks: {rack: '1.4.1', addressable: '2.1.1'})
+      bf.create_config(path: 'local_path')
 
-      Bundler.with_clean_env do
-        CLI.new.patch(gems_to_update: ['rack'], gemfile: File.join(@bf.dir, 'Gemfile'))
+      with_clean_env do
+        cmd = File.expand_path('../../../bin/bundler-patch', __dir__)
+        opts = "-g #{File.join(@bf.dir, 'Gemfile')} rack"
+        puts `#{cmd} #{opts}`
       end
-
-      # TODO: this still uses the local bundle config however.
-      # Is this because of Bundler.root usage in the call to Bundler::Installer.install
-      # Does Bundler itself shift to the appropriate config when passed a different gemfile?
-      # It appears to ... so - this is borken
 
       lockfile_spec_version('rack').should == '1.4.7'
       lockfile_spec_version('addressable').should == '2.1.1'
-      
-      fail "Doesn't take into account the bundle config of target."
+
+      with_clean_env do
+        Dir.chdir(bf.dir) do
+          contents = `bundle show rack`
+          contents.should match /local_path/
+        end
+      end
     end
 
     it 'all gems, one with vulnerability' do
@@ -68,7 +72,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch
         end
@@ -86,7 +90,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(vulnerable_gems_only: true)
         end
@@ -104,7 +108,7 @@ describe CLI do
                      locks: {addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(vulnerable_gems_only: true)
         end
@@ -121,7 +125,7 @@ describe CLI do
                      locks: {rack: '0.2.0', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(minor: true, gems_to_update: ['rack'])
         end
@@ -139,7 +143,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(strict: true)
         end
@@ -161,7 +165,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(strict: true, gems_to_update: ['rack'])
         end
@@ -179,7 +183,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(minimal: true, gems_to_update: ['rack'])
         end
@@ -200,7 +204,7 @@ describe CLI do
         # Ensure vendor/cache exists
         FileUtils.makedirs File.join(@bf.dir, 'vendor', 'cache')
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           # Bundler.reset! is only in 1.13, but these are the only bits we need reset for this to work:
           %w(root load).each { |name| Bundler.instance_variable_set("@#{name}", nil) }
@@ -220,7 +224,7 @@ describe CLI do
                      locks: {bson: '1.11.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(gems_to_update: ['bson'])
         end
@@ -237,7 +241,7 @@ describe CLI do
                      locks: {bson: '1.11.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(prefer_minimal: true, gems_to_update: ['bson'])
         end
@@ -254,7 +258,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(strict_updates: true, gems_to_update: ['addressable'])
         end
@@ -277,7 +281,7 @@ describe CLI do
                    gemfile: gemfile_base)
       end
 
-      Bundler.with_clean_env do
+      with_clean_env do
         CLI.new.patch(gemfile: gemfile_name)
       end
 
@@ -306,7 +310,7 @@ describe CLI do
         end
 
         res = nil
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           res = with_captured_stdout do
             CLI.new.patch(list: true)
@@ -329,7 +333,7 @@ describe CLI do
         target_dir = File.join(@bf.dir, '.foobar')
         File.exist?(File.join(target_dir, 'gems')).should eq false
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(gems_to_update: ['rack'], ruby_advisory_db_path: target_dir)
         end

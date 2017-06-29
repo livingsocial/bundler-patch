@@ -33,15 +33,17 @@ def with_clean_env
 end
 
 def bundler_patch(options)
-  cmd = File.expand_path('../bin/bundler-patch', __dir__)
+  exec = File.expand_path('../bin/bundler-patch', __dir__)
   opts = options.map do |k, v|
     if k == :gems_to_update
-      v.join(' ')
+      next
     elsif v.class == TrueClass
       "--#{k}"
     else
       "--#{k} #{v}"
     end
   end.join(' ')
-  puts `#{cmd} #{opts}`
+  cmd = "#{exec} #{opts} #{options[:gems_to_update].join(' ')}"
+  puts cmd
+  puts `#{cmd}`
 end

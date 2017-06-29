@@ -1,4 +1,4 @@
-# maybe don't need a separate file here? meh.
+# TODO: maybe don't need a separate file here? meh.
 
 require_relative '../../spec_helper'
 
@@ -24,7 +24,7 @@ describe 'integration tests' do
       bf = GemfileLockFixture.create(dir: @tmp_dir,
                                      gems: {rack: nil, addressable: nil},
                                      locks: {rack: '1.4.1', addressable: '2.1.1'},
-                                     ruby_version: RUBY_VERSION)
+                                     ruby_version: RbConfig::CONFIG['RUBY_PROGRAM_VERSION'])
 
       with_clean_env do
         bundler_patch(gems_to_update: ['rack'],

@@ -37,10 +37,22 @@ class TargetBundle
     patch_level ? "#{version}-#{patch_level}" : version
   end
 
-  # This is hairy here. All the possible variants will make this mucky, but ... can prolly get close enough
-  # in many circumstances. 
+  # This is hairy here. All the possible variants will make this mucky, but ... can
+  # prolly get close enough in many circumstances.
   def ruby_bin(current_ruby_bin=RbConfig::CONFIG['bindir'], target_ruby_version=self.ruby_version)
-    # TODO: check filesystem and if not found, try varying presence of ruby- and patch_level
+    [
+      target_ruby_version,
+      target_ruby_version.gsub(/-p\d+/, ''),
+      "ruby-#{target_ruby_version}",
+      "ruby-#{target_ruby_version.gsub(/-p\d+/, '')}"
+    ].map do |ruby_ver|
+      build_ruby_bin(current_ruby_bin, ruby_ver)
+    end.detect do |ruby_ver|
+      File.exist?(ruby_ver)
+    end
+  end
+
+  def build_ruby_bin(current_ruby_bin, target_ruby_version)
     current_ruby_bin.split(File::SEPARATOR).reverse.map do |segment|
       if segment =~ /\d+\.\d+\.\d+/
         segment.gsub(/(\d+\.\d+\.\d+)-*(p\d+)*/, target_ruby_version)
@@ -61,6 +73,13 @@ class TargetBundle
     Pathname.new(path).expand_path(@dir).to_s
   end
 
+  # To properly update another bundle, bundler-patch _does_ need to live in the same bundle
+  # location because of it's _dependencies_ (it's not a self-contained gem), and it can't both
+  # act on another bundle location AND find its own dependencies in a separate bundle location.
+  def install_bundler_patch_in_target
+    system "#{ruby_bin_exe} gem install --install-dir #{gem_home} --conservative --no-document bundler-patch"
+  end
+
   private
 
   def ruby_version_filename
@@ -73,12 +92,5 @@ class TargetBundle
 
   def lockfile_name
     "#{gemfile_name}.lock"
-  end
-
-  # To properly update another bundle, bundler-patch _does_ need to live in the same bundle
-  # location because of it's _dependencies_ (it's not a self-contained gem), and it can't both
-  # act on another bundle location AND find its own dependencies in a separate bundle location.
-  def install_bundler_patch_in_target
-
   end
 end

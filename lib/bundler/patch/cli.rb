@@ -69,7 +69,9 @@ module Bundler::Patch
       if options[:use_target_ruby]
         tb = options[:target]
         ruby = tb.ruby_bin_exe
-        full_command = "#{ruby} bundler-patch #{options[:original_command].gsub(/use_target_ruby/, '')}"
+        tb.install_bundler_patch_in_target
+        bundler_patch = File.join(tb.ruby_bin, 'bundler-patch') # uses 'latest' bundler-patch, which can work after we've installed ours. 
+        full_command = "#{ruby} #{bundler_patch} #{options[:original_command].gsub(/use_target_ruby/, '')}"
         puts full_command if $DEBUG
         puts `#{full_command}`
       else

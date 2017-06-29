@@ -31,3 +31,15 @@ def with_clean_env
     yield
   end
 end
+
+def bundler_patch(options)
+  cmd = File.expand_path('../bin/bundler-patch', __dir__)
+  opts = options.map do |k, v|
+    if k == :gems_to_update
+      v.join(' ')
+    else
+      "--#{k} #{v}"
+    end
+  end.join(' ')
+  puts `#{cmd} #{opts}`
+end

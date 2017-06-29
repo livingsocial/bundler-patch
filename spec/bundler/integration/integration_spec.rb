@@ -1,5 +1,5 @@
 require_relative '../../spec_helper'
-  
+
 describe CLI do
   before do
     setup_bundler_fixture
@@ -48,9 +48,7 @@ describe CLI do
       bf.create_config(path: 'local_path')
 
       with_clean_env do
-        cmd = File.expand_path('../../../bin/bundler-patch', __dir__)
-        opts = "-g #{File.join(@bf.dir, 'Gemfile')} rack"
-        puts `#{cmd} #{opts}`
+        bundler_patch(gemfile: File.join(@bf.dir, 'Gemfile'), gems_to_update: ['rack'])
       end
 
       lockfile_spec_version('rack').should == '1.4.7'

@@ -6,6 +6,8 @@ require 'slop'
 module Bundler::Patch
   class CLI
     def self.execute
+      original_command = ARGV.join(' ')
+
       opts = Slop.parse! do
         banner "Bundler Patch Version #{Bundler::Patch::VERSION}\nUsage: bundle patch [options] [gems-to-update]\n\nbundler-patch attempts to update gems conservatively.\n"
         on '-m', '--minor', 'Prefer update to the latest minor.patch version.'
@@ -33,6 +35,7 @@ module Bundler::Patch
 
       options = opts.to_hash
       options[:gems_to_update] = ARGV
+      options[:original_command] = original_command
       STDERR.puts options.inspect if ENV['DEBUG']
 
       show_help(opts) if options[:h]
@@ -63,13 +66,19 @@ module Bundler::Patch
 
       process_gemfile_option(options)
 
-      # if options[:target].use_target_ruby then we need to shell out to another bundler-patch, right?
+      if options[:use_target_ruby]
+        tb = options[:target]
+        ruby = File.join(tb.ruby_bin, "#{RbConfig::CONFIG['ruby_install_name']}#{RbConfig::CONFIG['EXEEXT']}")
+        full_command = "#{ruby} bundler-patch #{options[:original_command].gsub(/use_target_ruby/, '')}"
+        puts full_command if $DEBUG
+        puts `#{full_command}`
+      else
+        return list(options) if options[:list]
 
-      return list(options) if options[:list]
+        patch_ruby(options) if options[:ruby]
 
-      patch_ruby(options) if options[:ruby]
-
-      patch_gems(options)
+        patch_gems(options)
+      end
     end
 
     def normalize_options(options)

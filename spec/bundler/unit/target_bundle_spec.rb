@@ -89,10 +89,34 @@ describe TargetBundle do
 
   it 'should find ruby version in .ruby-version file if Bundler not too old but somehow does not have it' # maybe
 
-  it 'should find ruby bin for ruby version' do
-    gemfile_create('2.1.10') do |dir|
-      tb = TargetBundle.new(dir: dir)
-      tb.ruby_bin.should == '/Users/chrismo/.rbenv/versions/2.1.10/bin'
+  context 'ruby bin focused tests' do
+    it 'rbenv no patch-level'  do
+      gemfile_create('2.2.4') do |dir|
+        tb = TargetBundle.new(dir: dir)
+        tb.ruby_bin('~/.rbenv/versions/2.3.4/bin').should == '~/.rbenv/versions/2.2.4/bin'
+      end
+    end
+
+    it 'rbenv from no patch-level to patch-level'  do
+      gemfile_create('1.9.3p551') do |dir|
+        tb = TargetBundle.new(dir: dir)
+        tb.ruby_bin('~/.rbenv/versions/2.3.4/bin').should == '~/.rbenv/versions/1.9.3-p551/bin'
+      end
+    end
+
+    it 'rbenv from patch-level to no patch-level'  do
+      gemfile_create('2.3.4') do |dir|
+        tb = TargetBundle.new(dir: dir)
+        tb.ruby_bin('~/.rbenv/versions/1.9.3-p551/bin').should == '~/.rbenv/versions/2.3.4/bin'
+      end
+    end
+    
+    # haven't seen in the wild, but should be able to support it easily
+    it 'rbenv from patch-level no hyphen to no patch-level'  do
+      gemfile_create('2.3.4') do |dir|
+        tb = TargetBundle.new(dir: dir)
+        tb.ruby_bin('~/.rbenv/versions/1.9.3p551/bin').should == '~/.rbenv/versions/2.3.4/bin'
+      end
     end
   end
 end

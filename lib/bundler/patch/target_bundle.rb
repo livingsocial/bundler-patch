@@ -43,7 +43,7 @@ class TargetBundle
     # TODO: check filesystem and if not found, try varying presence of ruby- and patch_level
     current_ruby_bin.split(File::SEPARATOR).reverse.map do |segment|
       if segment =~ /\d+\.\d+\.\d+/
-        segment.gsub(/\d+\.\d+\.\d+/, target_ruby_version)
+        segment.gsub(/(\d+\.\d+\.\d+)-*(p\d+)*/, target_ruby_version)
       else
         segment
       end

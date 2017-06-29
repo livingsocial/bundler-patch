@@ -2,14 +2,17 @@ class TargetBundle
   attr_reader :dir, :gemfile
 
   def self.bundler_version_or_higher(version)
-    Gem::Version.new(Bundler::VERSION) >= Gem::Version.new(version)
+    version_greater_than_or_equal_to_other(Bundler::VERSION, version)
+  end
+
+  def self.version_greater_than_or_equal_to_other(a, b)
+    Gem::Version.new(a) >= Gem::Version.new(b)
   end
 
   # TODO: Make gems.rb default in Bundler 2.0.
-  def initialize(dir: Dir.pwd, gemfile: 'Gemfile', use_target_ruby: false)
+  def initialize(dir: Dir.pwd, gemfile: 'Gemfile')
     @dir = dir
     @gemfile = gemfile
-    @use_target_ruby = use_target_ruby
   end
 
   # First, the version of Ruby itself:
@@ -18,8 +21,8 @@ class TargetBundle
   # 3. (An additional flag so user can specify?)
   #
   # Second, look bin path presuming version is in current path.
-  def find_target_ruby_version
-    result = if TargetBundle.bundler_version_or_higher('1.12.0')
+  def ruby_version
+    result = if TargetBundle.bundler_version_or_higher('1.12.0') && File.exist?(lockfile_name)
                lockfile_parser = Bundler::LockfileParser.new(Bundler.read_file(lockfile_name))
                lockfile_parser.ruby_version
              end
@@ -30,7 +33,21 @@ class TargetBundle
                  Bundler::Definition.build(gemfile_name, lockfile_name, nil).ruby_version
                end
 
-    result
+    version, patch_level = result.to_s.scan(/(\d+\.\d+\.\d+)(p\d+)*/).first
+    patch_level ? "#{version}-#{patch_level}" : version
+  end
+
+  # This is hairy here. All the possible variants will make this mucky, but ... can prolly get close enough
+  # in many circumstances. 
+  def ruby_bin(current_ruby_bin=RbConfig::CONFIG['bindir'], target_ruby_version=self.ruby_version)
+    # TODO: check filesystem and if not found, try varying presence of ruby- and patch_level
+    current_ruby_bin.split(File::SEPARATOR).reverse.map do |segment|
+      if segment =~ /\d+\.\d+\.\d+/
+        segment.gsub(/\d+\.\d+\.\d+/, target_ruby_version)
+      else
+        segment
+      end
+    end.reverse.join(File::SEPARATOR)
   end
 
   private
@@ -45,10 +62,6 @@ class TargetBundle
 
   def lockfile_name
     "#{gemfile_name}.lock"
-  end
-
-  def find_target_ruby_bin
-    # RbConfig::CONFIG['bindir']
   end
 
   # This is necessary for installing bundler-patch into the target bundle

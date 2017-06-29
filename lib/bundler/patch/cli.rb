@@ -91,7 +91,7 @@ module Bundler::Patch
       if custom_gemfile && !custom_gemfile.empty?
         ENV['BUNDLE_GEMFILE'] = File.expand_path(custom_gemfile)
         dir, gemfile = [File.dirname(custom_gemfile), File.basename(custom_gemfile)]
-        target_bundle = TargetBundle.new(dir: dir, gemfile: gemfile, use_target_ruby: options[:use_target_ruby])
+        target_bundle = TargetBundle.new(dir: dir, gemfile: gemfile)
         options[:target] = target_bundle
       else
         options[:target] = TargetBundle.new

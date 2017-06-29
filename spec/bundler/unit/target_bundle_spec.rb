@@ -1,5 +1,9 @@
 require_relative '../../spec_helper'
 
+def ruby_bin_version_or_higher(version)
+  TargetBundle.version_greater_than_or_equal_to_other(RUBY_VERSION, version)
+end
+
 describe TargetBundle do
   before do
     @tmp_dir = File.join(__dir__, 'fixture')
@@ -11,9 +15,14 @@ describe TargetBundle do
   end
 
   def gemfile_create(ruby_version)
-    GemfileLockFixture.create(dir: @tmp_dir, ruby_version: ruby_version) do |fix_dir|
-      yield fix_dir
-    end
+    glf = GemfileLockFixture.new(dir: @tmp_dir, ruby_version: ruby_version)
+    glf.create_gemfile
+    yield @tmp_dir
+  end
+
+  def lockfile_create(ruby_version)
+    GemfileLockFixture.create(dir: @tmp_dir, ruby_version: ruby_version)
+    yield @tmp_dir
   end
 
   it 'should default to current directory and Gemfile' do
@@ -23,14 +32,26 @@ describe TargetBundle do
     end
   end
 
-  it 'should find ruby version from Gemfile or lockfile' do
+  it 'should find ruby version from Gemfile' do
     # CI will run on older Bundler versions to verify this
     gemfile_create(RUBY_VERSION) do |dir|
-      tb = TargetBundle.new(dir: dir, use_target_ruby: true)
+      tb = TargetBundle.new(dir: dir)
+      tb.ruby_version.to_s.should == RUBY_VERSION
+    end
+  end
+
+  it 'should find ruby version from Gemfile or lockfile' do
+    # CI will run on older Bundler versions to verify this
+    lockfile_create(RUBY_VERSION) do |dir|
+      tb = TargetBundle.new(dir: dir)
       if TargetBundle.bundler_version_or_higher('1.12.0')
-        tb.find_target_ruby_version.to_s.should == "ruby #{RUBY_VERSION}p#{RUBY_PATCHLEVEL}"
+        if ruby_bin_version_or_higher('2.1.5')
+          tb.ruby_version.to_s.should == RUBY_VERSION
+        else
+          tb.ruby_version.to_s.should == "#{RUBY_VERSION}-p#{RUBY_PATCHLEVEL}"
+        end
       else
-        tb.find_target_ruby_version.to_s.should == "ruby #{RUBY_VERSION}"
+        tb.ruby_version.to_s.should == RUBY_VERSION
       end
     end
   end
@@ -38,9 +59,13 @@ describe TargetBundle do
   it 'should behave with ruby requirement' do
     if TargetBundle.bundler_version_or_higher('1.12.0')
       conf = RbConfig::CONFIG
-      gemfile_create("~> #{conf['MAJOR']}.#{conf['MINOR']}") do |dir|
-        tb = TargetBundle.new(dir: dir, use_target_ruby: true)
-        tb.find_target_ruby_version.to_s.should == "ruby #{RUBY_VERSION}p#{RUBY_PATCHLEVEL}"
+      lockfile_create("~> #{conf['MAJOR']}.#{conf['MINOR']}") do |dir|
+        tb = TargetBundle.new(dir: dir)
+        if ruby_bin_version_or_higher('2.1.5')
+          tb.ruby_version.to_s.should == RUBY_VERSION
+        else
+          tb.ruby_version.to_s.should == "#{RUBY_VERSION}-p#{RUBY_PATCHLEVEL}"
+        end
       end
     else
       pending 'test irrelevant in versions prior to 1.12.0'
@@ -56,11 +81,18 @@ describe TargetBundle do
       rv = File.join(@tmp_dir, '.ruby-version')
       File.open(rv, 'w') { |f| f.puts '2.3.4' }
       gemfile_create(nil) do |dir|
-        tb = TargetBundle.new(dir: dir, use_target_ruby: true)
-        tb.find_target_ruby_version.to_s.should == '2.3.4'
+        tb = TargetBundle.new(dir: dir)
+        tb.ruby_version.to_s.should == '2.3.4'
       end
     end
   end
 
   it 'should find ruby version in .ruby-version file if Bundler not too old but somehow does not have it' # maybe
+
+  it 'should find ruby bin for ruby version' do
+    gemfile_create('2.1.10') do |dir|
+      tb = TargetBundle.new(dir: dir)
+      tb.ruby_bin.should == '/Users/chrismo/.rbenv/versions/2.1.10/bin'
+    end
+  end
 end

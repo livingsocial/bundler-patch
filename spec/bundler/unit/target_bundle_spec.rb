@@ -17,7 +17,8 @@ describe TargetBundle do
   def gemfile_create(ruby_version)
     glf = GemfileLockFixture.new(dir: @tmp_dir, ruby_version: ruby_version)
     glf.create_gemfile
-    yield @tmp_dir
+    yield @tmp_dir if block_given?
+    glf.bundler_fixture
   end
 
   def lockfile_create(ruby_version)
@@ -111,11 +112,31 @@ describe TargetBundle do
       end
     end
     
-    # haven't seen in the wild, but should be able to support it easily
+    # haven't seen this in the wild, but it's easy to support
     it 'rbenv from patch-level no hyphen to no patch-level'  do
       gemfile_create('2.3.4') do |dir|
         tb = TargetBundle.new(dir: dir)
         tb.ruby_bin('~/.rbenv/versions/1.9.3p551/bin').should == '~/.rbenv/versions/2.3.4/bin'
+      end
+    end
+  end
+
+  context 'gem_home' do
+    it 'should work with no local config path' do
+      gemfile_create('2.1.10')
+      with_clean_env do
+        Bundler.reset!
+        tb = TargetBundle.new(dir: @tmp_dir)
+        tb.gem_home.should == File.join('/Users/chrismo/.rbenv/versions/2.1.10/lib/ruby/gems/2.1.0')
+      end
+    end
+
+    it 'should work with local config path' do
+      bf = gemfile_create('2.1.10')
+      bf.create_config(path: 'my-local-path')
+      with_clean_env do
+        tb = TargetBundle.new(dir: @tmp_dir)
+        tb.gem_home.should == File.join(@tmp_dir, 'my-local-path', 'ruby', '2.1.0')
       end
     end
   end

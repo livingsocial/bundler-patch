@@ -50,6 +50,17 @@ class TargetBundle
     end.reverse.join(File::SEPARATOR)
   end
 
+  def ruby_bin_exe
+    File.join(ruby_bin, "#{RbConfig::CONFIG['ruby_install_name']}#{RbConfig::CONFIG['EXEEXT']}")
+  end
+
+  # Have to run a separate process in the other Ruby, because Bundler::Settings#path ultimately
+  # arrives at RbConfig::CONFIG which is all special data derived from the active runtime.  
+  def gem_home
+    path = `#{ruby_bin_exe} -C#{@dir} -rbundler -e 'puts Bundler.settings.path'`.chomp
+    Pathname.new(path).expand_path(@dir).to_s
+  end
+
   private
 
   def ruby_version_filename
@@ -62,11 +73,6 @@ class TargetBundle
 
   def lockfile_name
     "#{gemfile_name}.lock"
-  end
-
-  # This is necessary for installing bundler-patch into the target bundle
-  def find_target_gem_home
-
   end
 
   # To properly update another bundle, bundler-patch _does_ need to live in the same bundle

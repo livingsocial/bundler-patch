@@ -68,7 +68,7 @@ module Bundler::Patch
 
       if options[:use_target_ruby]
         tb = options[:target]
-        ruby = File.join(tb.ruby_bin, "#{RbConfig::CONFIG['ruby_install_name']}#{RbConfig::CONFIG['EXEEXT']}")
+        ruby = tb.ruby_bin_exe
         full_command = "#{ruby} bundler-patch #{options[:original_command].gsub(/use_target_ruby/, '')}"
         puts full_command if $DEBUG
         puts `#{full_command}`

@@ -48,7 +48,8 @@ class TargetBundle
     ].map do |ruby_ver|
       build_ruby_bin(current_ruby_bin, ruby_ver)
     end.detect do |ruby_ver|
-      File.exist?(ruby_ver)
+      print "Looking for #{ruby_ver}... " if ENV['BP_DEBUG']
+      File.exist?(ruby_ver).tap { |exist| puts(exist ? 'found' : 'not found') if ENV['BP_DEBUG'] }
     end
   end
 

@@ -7,6 +7,9 @@ before_install:
 
 script: bundle exec rake test:all
 
+env:
+  - BP_DEBUG=1
+
 matrix:
   include:
     - rvm: 2.3.4

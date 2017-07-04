@@ -90,10 +90,14 @@ module Bundler
     end
   end
 end             
-
+ 
+require 'pp'
+          
+puts RUBY_VERSION
+pp RbConfig::CONFIG
 puts Bundler.settings.path
     GUTS
-
+                 
     File.open(File.join(@dir, 'dump.path.rb'), 'w') { |f| f.print guts }
     cmd = "#{ruby_bin_exe} -C#{@dir} dump.path.rb"
     puts cmd if ENV['BP_DEBUG']

@@ -60,6 +60,8 @@ describe 'integration tests' do
       output.should match /addressable 2\.1\.1/
     end
 
-    it 'with different ruby bundle config install path'
+    it 'with different ruby bundle config install path' do
+      fail
+    end
   end
 end

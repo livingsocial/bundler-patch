@@ -77,25 +77,20 @@ module Bundler
   class Settings
     def path
       key = key_for(:path)
-      p key
       path = ENV[key] || @global_config[key]
-      p path
       return path if path && !@local_config.key?(key)
 
       if path = self[:path]
-        (path + Bundler.ruby_scope).tap { |o| puts "ruby_scope"; p o }
-      else
-        Bundler.rubygems.gem_dir.tap { |o| puts "gem_dir"; p o }
+        (path + Bundler.ruby_scope)
+      else             
+        # Bundler allows GEM_HOME to override this, but in our case we don't want that.
+        Gem.default_dir
       end
     end
   end
 end             
  
-require 'pp'
-          
-puts RUBY_VERSION
 puts Bundler.settings.path
-puts Gem.default_dir
     GUTS
                  
     File.open(File.join(@dir, 'dump.path.rb'), 'w') { |f| f.print guts }
@@ -112,10 +107,13 @@ puts Gem.default_dir
   end
 
   # To properly update another bundle, bundler-patch _does_ need to live in the same bundle
-  # location because of it's _dependencies_ (it's not a self-contained gem), and it can't both
+  # location because of its _dependencies_ (it's not a self-contained gem), and it can't both
   # act on another bundle location AND find its own dependencies in a separate bundle location.
+
+  # TODO: gem_home for this purpose does not need to be the local bundle path, can just
+  # be in the Ruby "global" gem home, right?
   def install_bundler_patch_in_target
-    cmd = "#{ruby_bin}#{File::SEPARATOR}gem install --install-dir #{gem_home} --conservative --no-document bundler-patch"
+    cmd = "#{ruby_bin}#{File::SEPARATOR}gem install --install-dir #{gem_home} --conservative --no-document --prerelease bundler-patch"
     puts cmd if ENV['BP_DEBUG']
     puts `#{cmd}`
   end

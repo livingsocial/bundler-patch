@@ -95,9 +95,9 @@ describe TargetBundle do
     end
 
     it 'rbenv no patch-level'  do
-      gemfile_create('2.2.4') do |dir|
+      gemfile_create('2.1.10') do |dir|
         tb = TargetBundle.new(dir: dir)
-        tb.ruby_bin(tmp_dir('/versions/2.3.4/bin')).should == tmp_dir('versions/2.2.4/bin')
+        tb.ruby_bin(tmp_dir('/versions/2.3.4/bin')).should == tmp_dir('versions/2.1.10/bin')
       end
     end
 

@@ -7,41 +7,37 @@ before_install:
 
 script: bundle exec rake test:all
 
+rvm: 2.1.10
+
 matrix:
   include:
     - rvm:
         - 2.3.4
-        - 2.1.10
       env:
         - BUNDLER_TEST_VERSION=1.9.10
         - BP_DEBUG=1
     - rvm:
         - 2.3.4
-        - 2.1.10
       env:
         - BUNDLER_TEST_VERSION=1.10.5
         - BP_DEBUG=1
     - rvm:
         - 2.3.4
-        - 2.1.10
       env:
         - BUNDLER_TEST_VERSION=1.11.2
         - BP_DEBUG=1
     - rvm:
         - 2.3.4
-        - 2.1.10
       env:
         - BUNDLER_TEST_VERSION=1.12.5
         - BP_DEBUG=1
     - rvm:
         - 2.3.4
-        - 2.1.10
       env:
         - BUNDLER_TEST_VERSION=1.13.6
         - BP_DEBUG=1
     - rvm:
         - 2.3.4
-        - 2.1.10
       env:
         - BUNDLER_TEST_VERSION=1.14.6
         - BP_DEBUG=1
@@ -55,7 +51,6 @@ matrix:
         - BP_DEBUG=1
     - rvm:
         - 2.3.4
-        - 2.1.10
       env:
         - BUNDLER_TEST_VERSION=1.15.1
         - BP_DEBUG=1

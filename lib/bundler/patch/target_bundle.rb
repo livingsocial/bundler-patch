@@ -70,7 +70,32 @@ class TargetBundle
   # Have to run a separate process in the other Ruby, because Bundler::Settings#path ultimately
   # arrives at RbConfig::CONFIG which is all special data derived from the active runtime.  
   def gem_home
-    cmd = "#{ruby_bin_exe} -C#{@dir} -rbundler -e 'puts Bundler.settings.path'"
+    guts = <<-GUTS
+require 'bundler'    
+
+module Bundler
+  class Settings
+    def path
+      key = key_for(:path)
+      p key
+      path = ENV[key] || @global_config[key]
+      p path
+      return path if path && !@local_config.key?(key)
+
+      if path = self[:path]
+        (path + Bundler.ruby_scope).tap { |o| puts "ruby_scope"; p o }
+      else
+        Bundler.rubygems.gem_dir.tap { |o| puts "gem_dir"; p o }
+      end
+    end
+  end
+end             
+
+puts Bundler.settings.path
+    GUTS
+
+    File.open(File.join(@dir, 'dump.path.rb'), 'w') { |f| f.print guts }
+    cmd = "#{ruby_bin_exe} -C#{@dir} dump.path.rb"
     puts cmd if ENV['BP_DEBUG']
     path = `#{cmd}`.chomp
     expanded_path = Pathname.new(path).expand_path(@dir).to_s

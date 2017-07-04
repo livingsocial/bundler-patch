@@ -45,5 +45,5 @@ def bundler_patch(options)
   end.join(' ')
   cmd = "#{exec} #{opts} #{options[:gems_to_update].join(' ')}"
   puts cmd
-  puts `#{cmd}`
+  `#{cmd}`.tap { |output| puts output }
 end

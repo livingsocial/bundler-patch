@@ -46,11 +46,7 @@ describe TargetBundle do
     lockfile_create(RUBY_VERSION) do |dir|
       tb = TargetBundle.new(dir: dir)
       if TargetBundle.bundler_version_or_higher('1.12.0')
-        if ruby_bin_version_or_higher('2.1.5')
-          tb.ruby_version.to_s.should == RUBY_VERSION
-        else
-          tb.ruby_version.to_s.should == "#{RUBY_VERSION}-p#{RUBY_PATCHLEVEL}"
-        end
+        tb.ruby_version.to_s.should == "#{RUBY_VERSION}-p#{RUBY_PATCHLEVEL}"
       else
         tb.ruby_version.to_s.should == RUBY_VERSION
       end
@@ -62,11 +58,7 @@ describe TargetBundle do
       conf = RbConfig::CONFIG
       lockfile_create("~> #{conf['MAJOR']}.#{conf['MINOR']}") do |dir|
         tb = TargetBundle.new(dir: dir)
-        if ruby_bin_version_or_higher('2.1.5')
-          tb.ruby_version.to_s.should == RUBY_VERSION
-        else
-          tb.ruby_version.to_s.should == "#{RUBY_VERSION}-p#{RUBY_PATCHLEVEL}"
-        end
+        tb.ruby_version.to_s.should == "#{RUBY_VERSION}-p#{RUBY_PATCHLEVEL}"
       end
     else
       pending 'test irrelevant in versions prior to 1.12.0'
@@ -91,24 +83,35 @@ describe TargetBundle do
   it 'should find ruby version in .ruby-version file if Bundler not too old but somehow does not have it' # maybe
 
   context 'ruby bin focused tests' do
+    def tmp_dir(path)
+      File.join(@tmp_dir, path)
+    end
+
+    before do
+      %w(2.2.4 2.3.4 1.9.3-p551).each do |ver|
+        dir = tmp_dir("versions/#{ver}/bin")
+        FileUtils.makedirs dir
+      end
+    end
+
     it 'rbenv no patch-level'  do
       gemfile_create('2.2.4') do |dir|
         tb = TargetBundle.new(dir: dir)
-        tb.ruby_bin('~/.rbenv/versions/2.3.4/bin').should == '~/.rbenv/versions/2.2.4/bin'
+        tb.ruby_bin(tmp_dir('/versions/2.3.4/bin')).should == tmp_dir('versions/2.2.4/bin')
       end
     end
 
     it 'rbenv from no patch-level to patch-level'  do
       gemfile_create('1.9.3p551') do |dir|
         tb = TargetBundle.new(dir: dir)
-        tb.ruby_bin('~/.rbenv/versions/2.3.4/bin').should == '~/.rbenv/versions/1.9.3-p551/bin'
+        tb.ruby_bin(tmp_dir('/versions/2.3.4/bin')).should == tmp_dir('versions/1.9.3-p551/bin')
       end
     end
 
     it 'rbenv from patch-level to no patch-level'  do
       gemfile_create('2.3.4') do |dir|
         tb = TargetBundle.new(dir: dir)
-        tb.ruby_bin('~/.rbenv/versions/1.9.3-p551/bin').should == '~/.rbenv/versions/2.3.4/bin'
+        tb.ruby_bin(tmp_dir('/versions/1.9.3-p551/bin')).should == tmp_dir('versions/2.3.4/bin')
       end
     end
     
@@ -116,7 +119,7 @@ describe TargetBundle do
     it 'rbenv from patch-level no hyphen to no patch-level'  do
       gemfile_create('2.3.4') do |dir|
         tb = TargetBundle.new(dir: dir)
-        tb.ruby_bin('~/.rbenv/versions/1.9.3p551/bin').should == '~/.rbenv/versions/2.3.4/bin'
+        tb.ruby_bin(tmp_dir('/versions/1.9.3p551/bin')).should == tmp_dir('versions/2.3.4/bin')
       end
     end
   end
@@ -125,7 +128,6 @@ describe TargetBundle do
     it 'should work with no local config path' do
       gemfile_create('2.1.10')
       with_clean_env do
-        Bundler.reset!
         tb = TargetBundle.new(dir: @tmp_dir)
         tb.gem_home.should == File.join('/Users/chrismo/.rbenv/versions/2.1.10/lib/ruby/gems/2.1.0')
       end

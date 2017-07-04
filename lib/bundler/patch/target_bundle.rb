@@ -94,8 +94,8 @@ end
 require 'pp'
           
 puts RUBY_VERSION
-pp RbConfig::CONFIG
 puts Bundler.settings.path
+puts Gem.default_dir
     GUTS
                  
     File.open(File.join(@dir, 'dump.path.rb'), 'w') { |f| f.print guts }

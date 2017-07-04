@@ -176,6 +176,24 @@ module Bundler::Patch
   end
 end
 
+module Bundler
+  class Settings
+    def path
+      key = key_for(:path)
+      puts "key_for(:path) - #{key}"
+      path = ENV[key] || @global_config[key]
+      puts "path - #{path}"
+      return path if path && !@local_config.key?(key)
+
+      if path = self[:path]
+        "#{path}/#{Bundler.ruby_scope}".tap { |o| puts "ruby_scope: #{o}" }
+      else
+        Bundler.rubygems.gem_dir.tap { |o| puts "gem_dir: #{o}" }
+      end
+    end
+  end
+end
+
 if __FILE__ == $0
   Bundler::Patch::CLI.execute
 end

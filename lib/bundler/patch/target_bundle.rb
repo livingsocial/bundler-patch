@@ -70,7 +70,8 @@ class TargetBundle
   # Have to run a separate process in the other Ruby, because Bundler::Settings#path ultimately
   # arrives at RbConfig::CONFIG which is all special data derived from the active runtime.  
   def gem_home
-    cmd = "#{ruby_bin_exe} -C#{@dir} -rbundler -e 'puts Bundler.settings.path'"
+    cmd = "#{ruby_bin_exe} -C#{@dir} -rbundler -e 'Bundler::Env.new.write($stdout)'"
+    # cmd = "#{ruby_bin_exe} -C#{@dir} -rbundler -e 'puts Bundler.settings.path'"
     path = `#{cmd}`.chomp
     expanded_path = Pathname.new(path).expand_path(@dir).to_s
     if ENV['BP_DEBUG']
@@ -85,9 +86,6 @@ class TargetBundle
   # location because of it's _dependencies_ (it's not a self-contained gem), and it can't both
   # act on another bundle location AND find its own dependencies in a separate bundle location.
   def install_bundler_patch_in_target
-    # TODO - different ruby no bundle config - wrong gem_home
-    # /home/travis/.rvm/rubies/ruby-2.1.10/bin/ruby gem install --install-dir /home/travis/.rvm/gems/ruby-2.3.4 --conservative --no-document bundler-patch
-
     cmd = "#{ruby_bin}#{File::SEPARATOR}gem install --install-dir #{gem_home} --conservative --no-document bundler-patch"
     puts cmd if ENV['BP_DEBUG']
     puts `#{cmd}`

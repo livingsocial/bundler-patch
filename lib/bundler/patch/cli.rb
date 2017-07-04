@@ -2,6 +2,7 @@ require 'bundler'
 require 'bundler/vendor/thor/lib/thor'
 require 'bundler/advise'
 require 'slop'
+require 'open3'
 
 module Bundler::Patch
   class CLI
@@ -72,8 +73,8 @@ module Bundler::Patch
         tb.install_bundler_patch_in_target
         bundler_patch = File.join(tb.ruby_bin, 'bundler-patch') # uses 'latest' bundler-patch, which can work after we've installed ours. 
         full_command = "#{ruby} #{bundler_patch} #{options[:original_command].gsub(/use_target_ruby/, '')}"
-        puts full_command #if $DEBUG
-        puts `#{full_command}`
+        result = shell_command(full_command)
+        puts result[:stdout] unless ENV['BP_DEBUG']
       else
         return list(options) if options[:list]
 
@@ -174,6 +175,22 @@ module Bundler::Patch
       Bundler.load.cache if Bundler.app_cache.exist?
     end
   end
+end
+
+def shell_command(command)
+  stdout, stderr, status = Open3.capture3(command)
+  if ENV['BP_DEBUG']
+    puts "-command:  #{command}"
+    puts "--stdout:#{indent(stdout)}"
+    puts "--stderr:#{indent(stderr)}"
+  end
+  {stdout: stdout,
+   stderr: stderr,
+   status: status}
+end
+
+def indent(s)
+  s.split("\n").map { |ln| "  #{ln}" }.join("\n")
 end
 
 if __FILE__ == $0

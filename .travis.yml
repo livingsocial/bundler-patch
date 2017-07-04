@@ -4,26 +4,48 @@ before_install:
   - for dir in $(echo $GEM_PATH | tr ':' ' '); do gem uninstall -i $dir bundler -a -x; done
   - gem install bundler -v $BUNDLER_TEST_VERSION
   - bundle --version
+  - rvm use 2.1.10 --install --binary --fuzzy
+  - gem update --system
+  - rvm use $RVM_VER --install --binary --fuzzy
+  - gem update --system
 
 script: bundle exec rake test:all
 
 matrix:
   include:
-    - rvm: 2.3.4
-      env: BUNDLER_TEST_VERSION=1.9.10
-    - rvm: 2.3.4
-      env: BUNDLER_TEST_VERSION=1.10.5
-    - rvm: 2.3.4
-      env: BUNDLER_TEST_VERSION=1.11.2
-    - rvm: 2.3.4
-      env: BUNDLER_TEST_VERSION=1.12.5
-    - rvm: 2.3.4
-      env: BUNDLER_TEST_VERSION=1.13.6
-    - rvm: 2.3.4
-      env: BUNDLER_TEST_VERSION=1.14.6
-    - rvm: 2.1.10
-      env: BUNDLER_TEST_VERSION=1.15.1
-    - rvm: 2.2.7
-      env: BUNDLER_TEST_VERSION=1.15.1
-    - rvm: 2.3.4
-      env: BUNDLER_TEST_VERSION=1.15.1
+      env:
+        - RVM_VER=2.3.4
+        - BUNDLER_TEST_VERSION=1.9.10
+        - BP_DEBUG=1
+      env:
+        - RVM_VER=2.3.4
+        - BUNDLER_TEST_VERSION=1.10.5
+        - BP_DEBUG=1
+      env:
+        - RVM_VER=2.3.4
+        - BUNDLER_TEST_VERSION=1.11.2
+        - BP_DEBUG=1
+      env:
+        - RVM_VER=2.3.4
+        - BUNDLER_TEST_VERSION=1.12.5
+        - BP_DEBUG=1
+      env:
+        - RVM_VER=2.3.4
+        - BUNDLER_TEST_VERSION=1.13.6
+        - BP_DEBUG=1
+      env:
+        - RVM_VER=2.3.4
+        - BUNDLER_TEST_VERSION=1.14.6
+        - BP_DEBUG=1
+#      env:
+#        - RVM_VER=2.1.10
+#        - BUNDLER_TEST_VERSION=1.15.1
+#        - BP_DEBUG=1
+      env:
+        - RVM_VER=2.2.7
+        - BUNDLER_TEST_VERSION=1.15.1
+        - BP_DEBUG=1
+      env:
+        - RVM_VER=2.3.4
+        - BUNDLER_TEST_VERSION=1.15.1
+        - BP_DEBUG=1

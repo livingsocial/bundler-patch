@@ -42,7 +42,7 @@ describe 'integration tests' do
       glf = GemfileLockFixture.new(dir: @tmp_dir,
                                    gems: {rack: '~> 1.4.1', addressable: '2.1.1'},
                                    # TODO - need programmatic way to work with an old ruby and make sure TRAVIS has it installed
-                                   ruby_version: '2.3.3')
+                                   ruby_version: '2.1.10')
       glf.create_gemfile
       bf = glf.bundler_fixture
 

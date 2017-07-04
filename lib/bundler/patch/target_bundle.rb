@@ -78,7 +78,9 @@ class TargetBundle
   # location because of it's _dependencies_ (it's not a self-contained gem), and it can't both
   # act on another bundle location AND find its own dependencies in a separate bundle location.
   def install_bundler_patch_in_target
-    system "#{ruby_bin_exe} gem install --install-dir #{gem_home} --conservative --no-document bundler-patch"
+    cmd = "#{ruby_bin_exe} gem install --install-dir #{gem_home} --conservative --no-document bundler-patch"
+    puts cmd if ENV['BP_DEBUG']
+    puts `#{cmd}`
   end
 
   private

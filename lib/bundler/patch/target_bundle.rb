@@ -97,7 +97,7 @@ class TargetBundle
   private
 
   def shell_command(command)
-    puts cmd if ENV['BP_DEBUG']
+    puts command if ENV['BP_DEBUG']
     stdout, stderr, status = Open3.capture3(command)
     if ENV['BP_DEBUG']
       puts "stdout: #{stdout}"

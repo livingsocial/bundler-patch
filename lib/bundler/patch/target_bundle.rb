@@ -90,7 +90,7 @@ class TargetBundle
   # TODO: gem_home for this purpose does not need to be the local bundle path, can just
   # be in the Ruby "global" gem home, right?
   def install_bundler_patch_in_target
-    cmd = "#{ruby_bin}#{File::SEPARATOR}gem install --install-dir #{gem_home} --conservative --no-document --prerelease bundler-patch"
+    cmd = "#{ruby_bin}#{File::SEPARATOR}gem install -V --install-dir #{gem_home} --conservative --no-document --prerelease bundler-patch"
     puts cmd if ENV['BP_DEBUG']
     system cmd
 

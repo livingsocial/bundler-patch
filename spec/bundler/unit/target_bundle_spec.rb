@@ -88,7 +88,7 @@ describe TargetBundle do
     end
 
     before do
-      %w(2.2.4 2.3.4 1.9.3-p551).each do |ver|
+      %w(2.2.4 2.3.4 1.9.3-p551 2.1.10).each do |ver|
         dir = tmp_dir("versions/#{ver}/bin")
         FileUtils.makedirs dir
       end
@@ -129,16 +129,18 @@ describe TargetBundle do
       gemfile_create('2.1.10')
       with_clean_env do
         tb = TargetBundle.new(dir: @tmp_dir)
-        tb.gem_home.should == File.join('/Users/chrismo/.rbenv/versions/2.1.10/lib/ruby/gems/2.1.0')
+        tb.gem_home.should match '/2.1.10/lib/ruby/gems/2.1.0$'
       end
     end
 
     it 'should work with local config path' do
+      # This used to have different functionality, but no longer does. Still need to doc that in
+      # both cases we want the same result. (There's a chance that we'll NEED this, but not sure yet).
       bf = gemfile_create('2.1.10')
       bf.create_config(path: 'my-local-path')
       with_clean_env do
         tb = TargetBundle.new(dir: @tmp_dir)
-        tb.gem_home.should == File.join(@tmp_dir, 'my-local-path', 'ruby', '2.1.0')
+        tb.gem_home.should match '/2.1.10/lib/ruby/gems/2.1.0$'
       end
     end
   end

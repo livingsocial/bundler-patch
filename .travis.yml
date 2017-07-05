@@ -5,7 +5,9 @@ before_install:
   - gem install bundler -v $BUNDLER_TEST_VERSION
   - bundle --version
   - rvm use 2.1.10 --install --binary --fuzzy
+  - gem update --system
   - rvm use $RVM_VER --install --binary --fuzzy
+  - gem update --system
 
 script: bundle exec rake test:all
 

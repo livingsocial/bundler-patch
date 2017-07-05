@@ -1,5 +1,3 @@
-require 'open3'
-
 class TargetBundle
   attr_reader :dir, :gemfile
 
@@ -95,18 +93,6 @@ class TargetBundle
   end
 
   private
-
-  def shell_command(command)
-    puts command if ENV['BP_DEBUG']
-    stdout, stderr, status = Open3.capture3(command)
-    if ENV['BP_DEBUG']
-      puts "stdout: #{stdout}"
-      puts "stderr: #{stderr}"
-    end
-    {stdout: stdout,
-     stderr: stderr,
-     status: status}
-  end
 
   def ruby_version_filename
     File.join(@dir, '.ruby-version')

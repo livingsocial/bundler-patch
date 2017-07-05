@@ -72,10 +72,10 @@ describe TargetBundle do
       fail
     else
       rv = File.join(@tmp_dir, '.ruby-version')
-      File.open(rv, 'w') { |f| f.puts '2.3.4' }
+      File.open(rv, 'w') { |f| f.puts '2.9.30' }
       gemfile_create(nil) do |dir|
         tb = TargetBundle.new(dir: dir)
-        tb.ruby_version.to_s.should == '2.3.4'
+        tb.ruby_version.to_s.should == '2.9.30'
       end
     end
   end

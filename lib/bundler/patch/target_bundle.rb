@@ -28,7 +28,7 @@ class TargetBundle
              end
 
     result ||= if File.exist?(ruby_version_filename)
-                 File.read('.ruby-version').chomp
+                 File.read(File.join(@dir, '.ruby-version')).chomp
                else
                  Bundler::Definition.build(gemfile_name, lockfile_name, nil).ruby_version
                end

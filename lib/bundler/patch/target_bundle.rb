@@ -1,3 +1,5 @@
+require 'open3'
+
 class TargetBundle
   attr_reader :dir, :gemfile
 
@@ -71,15 +73,10 @@ class TargetBundle
   # arrives at RbConfig::CONFIG which is all special data derived from the active runtime.
   # TODO: fix ^^
   def gem_home
-    cmd = "#{ruby_bin_exe} -C#{@dir} -e 'puts Gem.default_dir'"
-    puts cmd if ENV['BP_DEBUG']
-    path = `#{cmd}`.chomp
+    result = shell_command "#{ruby_bin_exe} -C#{@dir} -e 'puts Gem.default_dir'"
+    path = result[:stdout].chomp
     expanded_path = Pathname.new(path).expand_path(@dir).to_s
-    if ENV['BP_DEBUG']
-      puts cmd
-      puts path
-      puts expanded_path
-    end
+    puts expanded_path if ENV['BP_DEBUG']
     expanded_path
   end
 
@@ -91,15 +88,24 @@ class TargetBundle
   # be in the Ruby "global" gem home, right?
   def install_bundler_patch_in_target
     cmd = "#{ruby_bin}#{File::SEPARATOR}gem install -V --install-dir #{gem_home} --conservative --no-document --prerelease bundler-patch"
-    puts cmd if ENV['BP_DEBUG']
-    p system(cmd)
+    shell_command cmd
 
-    cmd = "ls #{ruby_bin}#{File::SEPARATOR}**"
-    puts cmd if ENV['BP_DEBUG']
-    p system(cmd)
+    shell_command "ls #{ruby_bin}#{File::SEPARATOR}**"
   end
 
   private
+
+  def shell_command(command)
+    puts cmd if ENV['BP_DEBUG']
+    stdout, stderr, status = Open3.capture3(command)
+    if ENV['BP_DEBUG']
+      puts "stdout: #{stdout}"
+      puts "stderr: #{stderr}"
+    end
+    {stdout: stdout,
+     stderr: stderr,
+     status: status}
+  end
 
   def ruby_version_filename
     File.join(@dir, '.ruby-version')

@@ -10,7 +10,7 @@ describe 'integration tests' do
   end
 
   after do
-    FileUtils.remove_entry_secure(@tmp_dir)
+    FileUtils.remove_entry_secure(@tmp_dir) if File.exist?(@tmp_dir)
   end
 
   def gemfile_create(ruby_version)

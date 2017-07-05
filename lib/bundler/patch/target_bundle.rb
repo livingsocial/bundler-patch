@@ -92,7 +92,11 @@ class TargetBundle
   def install_bundler_patch_in_target
     cmd = "#{ruby_bin}#{File::SEPARATOR}gem install --install-dir #{gem_home} --conservative --no-document --prerelease bundler-patch"
     puts cmd if ENV['BP_DEBUG']
-    puts `#{cmd}`
+    system cmd
+
+    cmd = "ls #{ruby_bin}#{File::SEPARATOR}**"
+    puts cmd if ENV['BP_DEBUG']
+    system cmd
   end
 
   private

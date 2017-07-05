@@ -129,7 +129,7 @@ describe TargetBundle do
       gemfile_create('2.1.10')
       with_clean_env do
         tb = TargetBundle.new(dir: @tmp_dir)
-        tb.gem_home.should match '/2.1.10/lib/ruby/gems/2.1.0$'
+        tb.gem_home.should match '/2.1.10/lib/ruby/gems/2.1.0'
       end
     end
 
@@ -140,7 +140,7 @@ describe TargetBundle do
       bf.create_config(path: 'my-local-path')
       with_clean_env do
         tb = TargetBundle.new(dir: @tmp_dir)
-        tb.gem_home.should match '/2.1.10/lib/ruby/gems/2.1.0$'
+        tb.gem_home.should match '/2.1.10/lib/ruby/gems/2.1.0'
       end
     end
   end

@@ -9,8 +9,12 @@ class TargetBundle
     Gem::Version.new(a) >= Gem::Version.new(b)
   end
 
-  # TODO: Make gems.rb default in Bundler 2.0.
-  def initialize(dir: Dir.pwd, gemfile: 'Gemfile')
+  def self.default_gemfile
+    # TODO: Make gems.rb default in Bundler 2.0.
+    'Gemfile'
+  end
+
+  def initialize(dir: Dir.pwd, gemfile: TargetBundle.default_gemfile)
     @dir = dir
     @gemfile = gemfile
   end

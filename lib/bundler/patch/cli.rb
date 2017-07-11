@@ -65,14 +65,9 @@ module Bundler::Patch
 
       options = Bundler::Patch::CLI::Options.new.normalize_options(options)
 
-      if options[:use_target_ruby] # TODO: && different_ruby_found
-        tb = options[:target]
-        ruby = tb.ruby_bin_exe
-        tb.install_bundler_patch_in_target
-        bundler_patch = File.join(tb.ruby_bin, 'bundler-patch') # uses 'latest' bundler-patch, which can work after we've installed ours. 
-        full_command = "#{ruby} #{bundler_patch} #{options[:original_command].gsub(/use_target_ruby/, '')}"
-        result = shell_command(full_command)
-        puts result[:stdout] unless ENV['BP_DEBUG']
+      tb = options[:target]
+      if options[:use_target_ruby] && tb.target_ruby_is_different?
+        launch_target_bundler_patch(options)
       else
         return list(options) if options[:list]
 
@@ -80,6 +75,16 @@ module Bundler::Patch
 
         patch_gems(options)
       end
+    end
+
+    def launch_target_bundler_patch(options)
+      tb = options[:target]
+      ruby = tb.ruby_bin_exe
+      tb.install_bundler_patch_in_target
+      bundler_patch = File.join(tb.ruby_bin, 'bundler-patch')
+      full_command = "#{ruby} #{bundler_patch} #{options[:original_command].gsub(/use_target_ruby/, '')}"
+      result = shell_command(full_command)
+      puts result[:stdout] unless ENV['BP_DEBUG']
     end
 
     private
@@ -152,9 +157,9 @@ module Bundler::Patch
 end
 
 def shell_command(command)
+  puts "-command:  #{command}" if ENV['BP_DEBUG']
   stdout, stderr, status = Open3.capture3(command)
   if ENV['BP_DEBUG']
-    puts "-command:  #{command}"
     puts "--stdout:#{indent(stdout)}"
     puts "--stderr:#{indent(stderr)}"
   end

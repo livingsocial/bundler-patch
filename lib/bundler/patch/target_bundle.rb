@@ -71,6 +71,10 @@ class TargetBundle
     File.join(ruby_bin, "#{RbConfig::CONFIG['ruby_install_name']}#{RbConfig::CONFIG['EXEEXT']}")
   end
 
+  def target_ruby_is_different?
+    !(ruby_bin == RbConfig::CONFIG['bindir'])
+  end
+
   # Have to run a separate process in the other Ruby, because Gem.default_dir depends on
   # RbConfig::CONFIG which is all special data derived from the active runtime. It could perhaps
   # be redone here, but I'd rather not copy that code in here at the moment.

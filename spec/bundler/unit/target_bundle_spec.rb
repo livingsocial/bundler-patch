@@ -144,4 +144,20 @@ describe TargetBundle do
       end
     end
   end
+
+  it 'should detect when target ruby is different' do
+    gemfile_create(RbConfig::CONFIG['RUBY_PROGRAM_VERSION'])
+    with_clean_env do
+      tb = TargetBundle.new(dir: @tmp_dir)
+      tb.target_ruby_is_different?.should == false
+    end
+  end
+
+  it 'should detect when target ruby is not different' do
+    gemfile_create('2.1.10')
+    with_clean_env do
+      tb = TargetBundle.new(dir: @tmp_dir)
+      tb.target_ruby_is_different?.should == true
+    end
+  end
 end

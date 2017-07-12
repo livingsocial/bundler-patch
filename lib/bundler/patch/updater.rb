@@ -13,7 +13,7 @@ module Bundler::Patch
     end
 
     def target_path_fn
-      File.join(@target_dir, @target_file)
+      File.expand_path(File.join(@target_dir, @target_file))
     end
 
     def calc_new_version(old_version)

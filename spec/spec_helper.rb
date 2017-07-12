@@ -14,3 +14,37 @@ require_relative './fixture/gemfile_fixture'
 def bundler_1_13?
   Gem::Version.new(Bundler::VERSION) >= Gem::Version.new('1.13.0.rc.2')
 end
+
+class BundlerFixture
+  def gemfile_contents
+    File.read(gemfile_filename)
+  end
+
+  def lockfile_spec_version(gem_name)
+    parsed_lockfile_spec(gem_name).version.to_s
+  end
+end
+
+def with_clean_env
+  Bundler.with_clean_env do
+    ENV['GEM_PATH'] = nil if ENV['GEM_PATH'] == '' # bug fix for clean_env?
+    yield
+  end
+end
+
+def bundler_patch(options)
+  exec = File.expand_path('../bin/bundler-patch', __dir__)
+  opts = options.map do |k, v|
+    if k == :gems_to_update
+      next
+    elsif v.class == TrueClass
+      "--#{k}"
+    else
+      "--#{k} #{v}"
+    end
+  end.join(' ')
+  cmd = "#{exec} #{opts} #{options[:gems_to_update].join(' ')}"
+  puts '* test shell_command'
+  result = shell_command(cmd)
+  result[:stdout].tap { |o| puts o unless ENV['BP_DEBUG'] }
+end

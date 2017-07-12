@@ -1,24 +1,17 @@
 require_relative '../../spec_helper'
 
-class BundlerFixture
-  def gemfile_filename
-    File.join(@dir, 'Gemfile')
-  end
-
-  def gemfile_contents
-    File.read(gemfile_filename)
-  end
-end
-
 describe CLI do
   before do
-    @bf = BundlerFixture.new(dir: File.expand_path('../../../tmp', __dir__))
-    ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
+    setup_bundler_fixture
+  end
+
+  def setup_bundler_fixture(gemfile: 'Gemfile')
+    @bf = BundlerFixture.new(dir: File.expand_path('../../../tmp', __dir__), gemfile: gemfile)
   end
 
   after do
-    ENV['BUNDLE_GEMFILE'] = nil
     @bf.clean_up
+    ENV['BUNDLE_GEMFILE'] = nil
   end
 
   def lockfile_spec_version(gem_name)
@@ -28,19 +21,44 @@ describe CLI do
   context 'integration tests' do
     it 'single gem with vulnerability' do
       Dir.chdir(@bf.dir) do
+        # TODO: tap then create is a no-op. Replace with just create. And it returns a @bf instance, so no need for two?
         GemfileLockFixture.tap do |fix|
           fix.create(dir: @bf.dir,
                      gems: {rack: nil, addressable: nil},
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(gems_to_update: ['rack'])
         end
 
         lockfile_spec_version('rack').should == '1.4.7'
         lockfile_spec_version('addressable').should == '2.1.1'
+      end
+    end
+
+    # There's SO much global state in SO any nooks and crannies, even with 1.15 Bundler.reset! and additional hacks
+    # like Gem.instance_variable_set("@paths", nil) (which I tried below), there's just no good way to inline a
+    # call back into Bundler to make it clean. with_clean_env plus backtick seems to be the best.
+    it 'single gem with vulnerability with --gemfile option' do
+      bf = GemfileLockFixture.create(dir: @bf.dir,
+                                     gems: {rack: nil, addressable: nil},
+                                     locks: {rack: '1.4.1', addressable: '2.1.1'})
+      bf.create_config(path: 'local_path')
+
+      with_clean_env do
+        bundler_patch(gemfile: File.join(@bf.dir, 'Gemfile'), gems_to_update: ['rack'])
+      end
+
+      lockfile_spec_version('rack').should == '1.4.7'
+      lockfile_spec_version('addressable').should == '2.1.1'
+
+      with_clean_env do
+        Dir.chdir(bf.dir) do
+          contents = `bundle show rack`
+          contents.should match /local_path/
+        end
       end
     end
 
@@ -52,7 +70,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch
         end
@@ -70,7 +88,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(vulnerable_gems_only: true)
         end
@@ -88,7 +106,7 @@ describe CLI do
                      locks: {addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(vulnerable_gems_only: true)
         end
@@ -105,7 +123,7 @@ describe CLI do
                      locks: {rack: '0.2.0', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(minor: true, gems_to_update: ['rack'])
         end
@@ -123,7 +141,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(strict: true)
         end
@@ -145,7 +163,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(strict: true, gems_to_update: ['rack'])
         end
@@ -163,7 +181,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(minimal: true, gems_to_update: ['rack'])
         end
@@ -184,7 +202,7 @@ describe CLI do
         # Ensure vendor/cache exists
         FileUtils.makedirs File.join(@bf.dir, 'vendor', 'cache')
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           # Bundler.reset! is only in 1.13, but these are the only bits we need reset for this to work:
           %w(root load).each { |name| Bundler.instance_variable_set("@#{name}", nil) }
@@ -204,7 +222,7 @@ describe CLI do
                      locks: {bson: '1.11.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(gems_to_update: ['bson'])
         end
@@ -221,7 +239,7 @@ describe CLI do
                      locks: {bson: '1.11.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(prefer_minimal: true, gems_to_update: ['bson'])
         end
@@ -238,7 +256,7 @@ describe CLI do
                      locks: {rack: '1.4.1', addressable: '2.1.1'})
         end
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(strict_updates: true, gems_to_update: ['addressable'])
         end
@@ -246,6 +264,28 @@ describe CLI do
         lockfile_spec_version('rack').should == '1.4.1'
         lockfile_spec_version('addressable').should == '2.1.2'
       end
+    end
+
+    it 'single gem with change to Gemfile with custom Gemfile name' do
+      gemfile_base = 'Custom.gemfile'
+      gemfile_name = File.join(@bf.dir, gemfile_base)
+
+      setup_bundler_fixture(gemfile: gemfile_base)
+
+      GemfileLockFixture.tap do |fix|
+        fix.create(dir: @bf.dir,
+                   gems: {rack: '1.4.1'},
+                   locks: {rack: '1.4.1'},
+                   gemfile: gemfile_base)
+      end
+
+      with_clean_env do
+        CLI.new.patch(gemfile: gemfile_name)
+      end
+
+      gemfile_contents = File.read(gemfile_name)
+      gemfile_contents.should include "gem 'rack', '1.4.6'"
+      lockfile_spec_version('rack').should == '1.4.6'
     end
 
     def with_captured_stdout
@@ -268,7 +308,7 @@ describe CLI do
         end
 
         res = nil
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           res = with_captured_stdout do
             CLI.new.patch(list: true)
@@ -291,7 +331,7 @@ describe CLI do
         target_dir = File.join(@bf.dir, '.foobar')
         File.exist?(File.join(target_dir, 'gems')).should eq false
 
-        Bundler.with_clean_env do
+        with_clean_env do
           ENV['BUNDLE_GEMFILE'] = File.join(@bf.dir, 'Gemfile')
           CLI.new.patch(gems_to_update: ['rack'], ruby_advisory_db_path: target_dir)
         end
@@ -313,6 +353,13 @@ describe CLI do
         CLI.new.patch(ruby: true, rubies: [@current_ruby])
         File.read('Gemfile').chomp.should == "ruby '#{@current_ruby}'"
       end
+    end
+
+    it 'updates ruby version in custom Gemfile' do
+      fn = File.join(@bf.dir, 'Custom.gemfile')
+      File.open(fn, 'w') { |f| f.puts "ruby '#{@current_ruby_api}'" }
+      CLI.new.patch(ruby: true, rubies: [@current_ruby], gemfile: fn)
+      File.read(fn).chomp.should == "ruby '#{@current_ruby}'"
     end
   end
 end

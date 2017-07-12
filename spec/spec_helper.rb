@@ -44,6 +44,7 @@ def bundler_patch(options)
     end
   end.join(' ')
   cmd = "#{exec} #{opts} #{options[:gems_to_update].join(' ')}"
-  puts cmd
-  `#{cmd}`.tap { |output| puts output }
+  puts '* test shell_command'
+  result = shell_command(cmd)
+  result[:stdout].tap { |o| puts o unless ENV['BP_DEBUG'] }
 end

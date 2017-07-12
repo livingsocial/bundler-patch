@@ -33,9 +33,11 @@ class TargetBundle
 
     result ||= if File.exist?(ruby_version_filename)
                  File.read(File.join(@dir, '.ruby-version')).chomp
-               else
+               elsif File.exist?(gemfile_name)
                  Bundler::Definition.build(gemfile_name, lockfile_name, nil).ruby_version
                end
+
+    result ||= RbConfig::CONFIG['RUBY_PROGRAM_VERSION']
 
     version, patch_level = result.to_s.scan(/(\d+\.\d+\.\d+)(p\d+)*/).first
     patch_level ? "#{version}-#{patch_level}" : version

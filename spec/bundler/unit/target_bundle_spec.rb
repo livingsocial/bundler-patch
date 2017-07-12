@@ -80,6 +80,11 @@ describe TargetBundle do
     end
   end
 
+  it 'should default to current ruby if all other attempts fail' do
+    tb = TargetBundle.new(dir: @tmp_dir)
+    tb.ruby_version.to_s.should == RbConfig::CONFIG['RUBY_PROGRAM_VERSION']
+  end
+
   it 'should find ruby version in .ruby-version file if Bundler not too old but somehow does not have it' # maybe
 
   context 'ruby bin focused tests' do

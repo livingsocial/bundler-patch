@@ -23,6 +23,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'slop', '~> 3.0'
   spec.add_dependency 'bundler', '~> 1.7'
 
+  spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'bundler-fixture', '~> 1.6'
   spec.add_development_dependency 'pry'
   spec.add_development_dependency 'rake', '~> 10.0'

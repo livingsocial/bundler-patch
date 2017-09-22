@@ -13,6 +13,12 @@ describe Bundler::Patch::CLI::Options do
       normalized_should_eql(norm, {:hyphen_ated => 1, :string => 1, :symbol => 1, :under_score => 1})
     end
 
+    it 'should not blow away an earlier setting' do
+      opts = {:'a-b' => 1, :a_b => nil}
+      norm = Bundler::Patch::CLI::Options.new.normalize_options(opts)
+      normalized_should_eql(norm, {:a_b => 1})
+    end
+
     it 'should map old names to new names' do
       opts = {:prefer_minimal => true, :minor_preferred => true, :strict_updates => true}
       norm = Bundler::Patch::CLI::Options.new.normalize_options(opts)

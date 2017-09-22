@@ -7,7 +7,7 @@ module Bundler::Patch
           options.each_pair do |k, v|
             new_key = k.to_s.gsub('-', '_').to_sym
             new_key = map[new_key] || new_key
-            target[new_key] = v
+            target[new_key] ||= v
           end
           process_gemfile_option(target)
         end

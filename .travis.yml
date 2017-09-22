@@ -46,10 +46,15 @@ matrix:
     - rvm: 2.2.7
       env:
       - RVM_VER=2.2.7
-      - BUNDLER_TEST_VERSION=1.15.1
+      - BUNDLER_TEST_VERSION=1.15.4
       - BP_DEBUG=1
     - rvm: 2.3.4
       env:
       - RVM_VER=2.3.4
-      - BUNDLER_TEST_VERSION=1.15.1
+      - BUNDLER_TEST_VERSION=1.15.4
+      - BP_DEBUG=1
+    - rvm: 2.3.4
+      env:
+      - RVM_VER=2.3.4
+      - BUNDLER_TEST_VERSION=1.16.0.pre.2
       - BP_DEBUG=1

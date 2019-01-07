@@ -1,6 +1,7 @@
 language: ruby
 
 before_install:
+  - echo $GEM_PATH
   - for dir in $(echo $GEM_PATH | tr ':' ' '); do gem uninstall -i $dir bundler -a -x; done
   - gem install bundler -v $BUNDLER_TEST_VERSION
   - bundle --version

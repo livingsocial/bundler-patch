@@ -2,16 +2,14 @@ language: ruby
 
 before_install:
   - echo $GEM_PATH
+  - gem update --system # this will bring in a new bundler and make it default
   - gem list bundler -d # see where the bundler versions are installed and which are listed as default
   - # Move bundler gemspec from default to reg directory so it can be uninstalled. Is there an API way to do this?
   - mv /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/default/bundler-*.gemspec /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/
   - for dir in $(echo $GEM_PATH | tr ':' ' '); do gem uninstall -i $dir bundler -a -x; done
   - gem install bundler -v $BUNDLER_TEST_VERSION
   - bundle --version
-  - gem list bundler -d # just double checking
-  - rvm use $RVM_VER --install --binary --fuzzy
-  - gem update --system
-  - gem list bundler -d # and triple checking because it seems some rubygems updates may make the existing bundler a default gem.
+  - gem list bundler -d # double checking
 
 script: bundle exec rake test:all
 

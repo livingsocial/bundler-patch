@@ -18,46 +18,32 @@ script: bundle exec rake test:all
 # Lookup RubyGems version installed with Ruby at https://github.com/ruby/ruby/blob/ruby_2_4/lib/rubygems.rb
 matrix:
   include:
-    - rvm: 2.5.3
+    - rvm: 2.3.8
       env:
-      - RVM_VER=2.5.3
-      - RUBY_MAJ_MIN=2.5
-      - RUBYGEMS_VERSION=2.7.6
-      - BUNDLER_TEST_VERSION=1.9.10
-      - BP_DEBUG=1
-    - rvm: 2.5.3
-      env:
-      - RVM_VER=2.5.3
-      - RUBY_MAJ_MIN=2.5
-      - RUBYGEMS_VERSION=2.7.6
-      - BUNDLER_TEST_VERSION=1.10.5
-      - BP_DEBUG=1
-    - rvm: 2.5.3
-      env:
-      - RVM_VER=2.5.3
-      - RUBY_MAJ_MIN=2.5
-      - RUBYGEMS_VERSION=2.7.6
+      - RVM_VER=2.3.8
+      - RUBY_MAJ_MIN=2.3
+      - RUBYGEMS_VERSION=2.5.2
       - BUNDLER_TEST_VERSION=1.11.2
       - BP_DEBUG=1
-    - rvm: 2.5.3
+    - rvm: 2.3.8
       env:
-      - RVM_VER=2.5.3
-      - RUBY_MAJ_MIN=2.5
-      - RUBYGEMS_VERSION=2.7.6
+      - RVM_VER=2.3.8
+      - RUBY_MAJ_MIN=2.3
+      - RUBYGEMS_VERSION=2.5.2
       - BUNDLER_TEST_VERSION=1.12.5
       - BP_DEBUG=1
-    - rvm: 2.5.3
+    - rvm: 2.4.5
       env:
-      - RVM_VER=2.5.3
+      - RVM_VER=2.4.5
       - RUBY_MAJ_MIN=2.5
-      - RUBYGEMS_VERSION=2.7.6
+      - RUBYGEMS_VERSION=2.6.14
       - BUNDLER_TEST_VERSION=1.13.6
       - BP_DEBUG=1
-    - rvm: 2.5.3
+    - rvm: 2.4.5
       env:
-      - RVM_VER=2.5.3
+      - RVM_VER=2.4.5
       - RUBY_MAJ_MIN=2.5
-      - RUBYGEMS_VERSION=2.7.6
+      - RUBYGEMS_VERSION=2.6.14
       - BUNDLER_TEST_VERSION=1.14.6
       - BP_DEBUG=1
     - rvm: 2.5.3
@@ -85,14 +71,21 @@ matrix:
       env:
       - RVM_VER=2.4.5
       - RUBY_MAJ_MIN=2.4
-      - RUBYGEMS_VERSION=2.6.14.3
+      - RUBYGEMS_VERSION=2.6.14
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.3.8
       env:
       - RVM_VER=2.3.8
       - RUBY_MAJ_MIN=2.3
-      - RUBYGEMS_VERSION=2.5.2.3
+      - RUBYGEMS_VERSION=2.5.2
+      - BUNDLER_TEST_VERSION=1.17.3
+      - BP_DEBUG=1
+    - rvm: 2.6.0
+      env:
+      - RVM_VER=2.6.0
+      - RUBY_MAJ_MIN=2.6
+      - RUBYGEMS_VERSION=3.0.1
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.6.0

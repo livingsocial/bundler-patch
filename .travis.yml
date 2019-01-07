@@ -2,6 +2,7 @@ language: ruby
 
 before_install:
   - echo $GEM_PATH
+  - gem list bundler -d
   - for dir in $(echo $GEM_PATH | tr ':' ' '); do gem uninstall -i $dir bundler -a -x; done
   - gem install bundler -v $BUNDLER_TEST_VERSION
   - bundle --version
@@ -61,17 +62,17 @@ matrix:
       - BP_DEBUG=1
     - rvm: 2.4.5
       env:
-      - RVM_VER=2.5.3
+      - RVM_VER=2.4.5
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.3.8
       env:
-      - RVM_VER=2.5.3
+      - RVM_VER=2.3.8
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.6.0
       env:
-      - RVM_VER=2.5.3
+      - RVM_VER=2.6.0
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.5.3

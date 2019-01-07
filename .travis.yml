@@ -5,8 +5,8 @@ before_install:
   - gem list bundler -d
   - # Move bundler gemspec from default to reg directory so it can be uninstalled
   - mv /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/default/bundler-*.gemspec /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/
-#  - for dir in $(echo $GEM_PATH | tr ':' ' '); do gem uninstall -i $dir bundler -a -x; done
-  - gem uninstall bundler -a -x
+  - for dir in $(echo $GEM_PATH | tr ':' ' '); do gem uninstall -i $dir bundler -a -x; done
+#  - gem uninstall bundler -a -x
   - gem install bundler -v $BUNDLER_TEST_VERSION
   - bundle --version
   - rvm use $RVM_VER --install --binary --fuzzy

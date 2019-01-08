@@ -129,23 +129,33 @@ describe TargetBundle do
     end
   end
 
+  # This context depends on the referenced Ruby version to actually be installed
+  # for these specs to pass. The .travis.yml file should have a 2.4.5 hardcoded
+  # to make sure it exists.
   context 'gem_home' do
+    # ENV vars for use inside Travis CI. Otherwise we presume developer to have
+    # 2.5.3 installed. That version can be changed in the future as Ruby
+    # versions march on.
+    let(:test_ruby_version) { ENV['RVM_VER'] || '2.5.3' }
+    let(:test_maj_min_ver) { ENV['RUBY_MAJ_MIN'] || '2.5.0' }
+
     it 'should work with no local config path' do
-      gemfile_create('2.1.10')
+      gemfile_create(test_ruby_version)
       with_clean_env do
         tb = TargetBundle.new(dir: @tmp_dir)
-        tb.gem_home.should match '2.1.10/lib/ruby/gems/2.1.0$'
+        tb.gem_home.should match "#{test_ruby_version}/lib/ruby/gems/#{test_maj_min_ver}$"
       end
     end
 
     it 'should work with local config path' do
-      # This used to have different functionality, but no longer does. Still need to doc that in
-      # both cases we want the same result. (There's a chance that we'll NEED this, but not sure yet).
-      bf = gemfile_create('2.1.10')
+      # This used to have different functionality, but no longer does. Still
+      # need to doc that in both cases we want the same result. (There's a
+      # chance that we'll NEED this, but not sure yet).
+      bf = gemfile_create(test_ruby_version)
       bf.create_config(path: 'my-local-path')
       with_clean_env do
         tb = TargetBundle.new(dir: @tmp_dir)
-        tb.gem_home.should match '2.1.10/lib/ruby/gems/2.1.0$'
+        tb.gem_home.should match "#{test_ruby_version}/lib/ruby/gems/#{test_maj_min_ver}$"
       end
     end
   end

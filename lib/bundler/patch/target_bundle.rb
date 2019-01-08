@@ -70,7 +70,9 @@ class TargetBundle
   end
 
   def ruby_bin_exe
-    File.join(ruby_bin, "#{RbConfig::CONFIG['ruby_install_name']}#{RbConfig::CONFIG['EXEEXT']}")
+    ruby_install_name = RbConfig::CONFIG['ruby_install_name']
+    exe_ext = RbConfig::CONFIG['EXEEXT']
+    File.join(ruby_bin, "#{ruby_install_name}#{exe_ext}")
   end
 
   def target_ruby_is_different?

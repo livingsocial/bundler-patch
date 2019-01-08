@@ -71,6 +71,12 @@ module Bundler::Patch
     def prep
       @bundler_def ||= Bundler.definition(@gems_to_update.to_bundler_definition)
       @bundler_def.extend ConservativeDefinition
+
+      # Starting with 1.17, this method has to be called externally, which isn't
+      # ideal in my opinion since the Definition class depends on it.
+      # https://github.com/bundler/bundler/commit/22f15209b87e0b0792c8a393549e1a10c963d59c
+      @bundler_def.gem_version_promoter if @bundler_def.respond_to?(:gem_version_promoter)
+
       @bundler_def.gems_to_update = @gems_to_update
       @bundler_def.strict = @options[:strict]
       @bundler_def.minor_preferred = @options[:minor]

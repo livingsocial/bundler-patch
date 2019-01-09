@@ -8,12 +8,14 @@ before_install:
   - gem update --system $RUBYGEMS_VERSION
   - gem list bundler -d # see where the bundler versions are installed and which are listed as default
   - # Move bundler gemspec from default to reg directory so it can be uninstalled. Is there an API way to do this?
-  - mv /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/default/bundler-*.gemspec /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/
+  - mv -v /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/default/bundler-*.gemspec /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/
   - for dir in $(echo $GEM_PATH | tr ':' ' '); do gem uninstall -i $dir bundler -a -x; done
   - gem uninstall -i /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0 bundler -a -x
+  - rm -rf /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/site_ruby/$RUBY_MAJ_MIN.0/bundler* # Dunno why these are here yet, but they definitely get in the way
+  - rm -rf /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/site_ruby/$RUBY_MAJ_MIN.0/rubygems*
   - gem install bundler -v $BUNDLER_TEST_VERSION
   - bundle --version
-  - which bundle # TODO: Need to blow away site_ruby version of bundler if going back in time.
+  - which bundle
   - gem list bundler -d # double checking
 
 script: bundle exec rake test:all

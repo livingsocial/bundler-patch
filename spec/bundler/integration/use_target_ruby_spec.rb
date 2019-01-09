@@ -37,14 +37,17 @@ describe 'integration tests' do
     it 'with different ruby no bundle config' do
       # Only the Gemfile is created here, with no lock file, because it won't work
       # in the fixture code to do the lock command against a declared older Ruby.
+      #
+      # The referenced Ruby version must be an installed version in the OS.
       glf = GemfileLockFixture.new(dir: @tmp_dir,
                                    gems: {rack: '~> 1.4.1', addressable: '2.1.1'},
-                                   ruby_version: '2.1.10')
+                                   ruby_version: '2.4.5')
       glf.create_gemfile
       bf = glf.bundler_fixture
 
       output = nil
       with_clean_env do
+        # Enable BP_DEBUG to troubleshoot the output
         output = bundler_patch(gems_to_update: ['rack'],
                                gemfile: File.join(@tmp_dir, 'Gemfile'),
                                use_target_ruby: true)
@@ -60,15 +63,18 @@ describe 'integration tests' do
     it 'with different ruby bundle config install path' do
       # Only the Gemfile is created here, with no lock file, because it won't work
       # in the fixture code to do the lock command against a declared older Ruby.
+      #
+      # The referenced Ruby version must be an installed version in the OS.
       glf = GemfileLockFixture.new(dir: @tmp_dir,
                                    gems: {rack: '~> 1.4.1', addressable: '2.1.1'},
-                                   ruby_version: '2.1.10')
+                                   ruby_version: '2.4.5')
       glf.create_gemfile
       bf = glf.bundler_fixture
       bf.create_config(path: 'local-path')
 
       output = nil
       with_clean_env do
+        # Enable BP_DEBUG to troubleshoot the output
         output = bundler_patch(gems_to_update: ['rack'],
                                gemfile: File.join(@tmp_dir, 'Gemfile'),
                                use_target_ruby: true)

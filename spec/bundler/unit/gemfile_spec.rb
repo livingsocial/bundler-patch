@@ -14,6 +14,7 @@ end
 describe Gemfile do
   before do
     @tmpdir = Dir.mktmpdir
+    @bf = BundlerFixture.new
   end
 
   after do
@@ -148,7 +149,8 @@ describe Gemfile do
       # long form is an equivalent twiddle-wakka
       it 'should support twiddle-wakka long form leaving existing if patch within existing requirement' do
         # equivalent to ~> 1.2.0
-        gem_fixture_create(@tmpdir, {foo: ['>= 1.2.0', '< 1.3.0']}, {foo: '1.2.5'}) do
+        foo_requirements = ['>= 1.2.0', '< 1.3.0']
+        gem_fixture_create(@tmpdir, {foo: foo_requirements}, {foo: '1.2.5'}) do
           s = Gemfile.new(gem_name: 'foo', patched_versions: ['1.2.7'])
           s.update
           # TODO: this is inconsistent, should probably change to ~> 1.2.7. Other cases
@@ -160,7 +162,9 @@ describe Gemfile do
           #
           # Compound forms aren't common, and supporting a more intelligent upgrade when the
           # patch is still inside the req is probably not worth the trouble.
-          File.read('Gemfile').should have_line("gem 'foo', '< 1.3.0', '>= 1.2.0'")
+          # File.read('Gemfile').should have_line("gem 'foo', '< 1.3.0', '>= 1.2.0'")
+          expected_reqs = @bf.requirement_to_s(Gem::Requirement.new(foo_requirements))
+          File.read('Gemfile').should have_line("gem 'foo', #{expected_reqs}")
         end
       end
 
@@ -174,10 +178,13 @@ describe Gemfile do
       end
 
       it 'should support compound with twiddle-wakka if patch inside existing req' do
-        gem_fixture_create(@tmpdir, {foo: ['>= 1.2.1.2', '~> 1.2.1']}, {foo: '1.2.1.3'}) do
+        foo_requirements = ['>= 1.2.1.2', '~> 1.2.1']
+        gem_fixture_create(@tmpdir, {foo: foo_requirements}, {foo: '1.2.1.3'}) do
           s = Gemfile.new(gem_name: 'foo', patched_versions: ['1.2.4'])
           s.update
-          File.read('Gemfile').should have_line("gem 'foo', '>= 1.2.1.2', '~> 1.2.1'")
+          # The requirements are ordered as of RubyGems 3.0 for compound requirements
+          expected_reqs = @bf.requirement_to_s(Gem::Requirement.new(foo_requirements))
+          File.read('Gemfile').should have_line("gem 'foo', #{expected_reqs}")
         end
       end
 

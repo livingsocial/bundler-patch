@@ -35,14 +35,14 @@ matrix:
     - rvm: 2.4.5
       env:
       - RVM_VER=2.4.5
-      - RUBY_MAJ_MIN=2.5
+      - RUBY_MAJ_MIN=2.4
       - RUBYGEMS_VERSION=2.6.14
       - BUNDLER_TEST_VERSION=1.13.6
       - BP_DEBUG=1
     - rvm: 2.4.5
       env:
       - RVM_VER=2.4.5
-      - RUBY_MAJ_MIN=2.5
+      - RUBY_MAJ_MIN=2.4
       - RUBYGEMS_VERSION=2.6.14
       - BUNDLER_TEST_VERSION=1.14.6
       - BP_DEBUG=1

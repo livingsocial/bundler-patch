@@ -11,6 +11,7 @@ before_install:
   - gem uninstall -i /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0 bundler -a -x
   - gem install bundler -v $BUNDLER_TEST_VERSION
   - bundle --version
+  - which bundle
   - gem list bundler -d # double checking
 
 script: bundle exec rake test:all

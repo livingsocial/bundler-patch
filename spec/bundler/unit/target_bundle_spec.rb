@@ -138,12 +138,15 @@ describe TargetBundle do
     let(:current_ruby_version) { RbConfig::CONFIG['RUBY_PROGRAM_VERSION'] }
     let(:test_ruby_version) { ENV['RVM_VER'] || current_ruby_version }
     let(:test_maj_min_ver) { test_ruby_version.split('.')[0..1].join('.') }
+    let(:expected_path_fragment) do
+      "#{test_ruby_version}/lib/ruby/gems/#{test_maj_min_ver}.0$"
+    end
 
     it 'should work with no local config path' do
       gemfile_create(test_ruby_version)
       with_clean_env do
         tb = TargetBundle.new(dir: @tmp_dir)
-        tb.gem_home.should match "#{test_ruby_version}/lib/ruby/gems/#{test_maj_min_ver}$"
+        tb.gem_home.should match expected_path_fragment
       end
     end
 
@@ -155,7 +158,7 @@ describe TargetBundle do
       bf.create_config(path: 'my-local-path')
       with_clean_env do
         tb = TargetBundle.new(dir: @tmp_dir)
-        tb.gem_home.should match "#{test_ruby_version}/lib/ruby/gems/#{test_maj_min_ver}$"
+        tb.gem_home.should match expected_path_fragment
       end
     end
   end

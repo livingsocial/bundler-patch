@@ -11,12 +11,12 @@ before_install:
   - mv -v /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/default/bundler-*.gemspec /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/
   - for dir in $(echo $GEM_PATH | tr ':' ' '); do gem uninstall -i $dir bundler -a -x; done
   - gem uninstall -i /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0 bundler -a -x
-  - rm -rf /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/site_ruby/$RUBY_MAJ_MIN.0/bundler* # Dunno why these are here yet, but they definitely get in the way
-  - rm -rf /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/site_ruby/$RUBY_MAJ_MIN.0/rubygems*
+  `- rm -rf /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/site_ruby/$RUBY_MAJ_MIN.0/bundler* # RubyGems update puts this Bundler here. Uninstalling isn't removing these.
   - gem install bundler -v $BUNDLER_TEST_VERSION
   - bundle --version
   - which bundle
-  - gem list bundler -d # double checking
+  - gem list bundler -d
+  - gem -v # am I blowing away the very thing I updated earlier?
 
 script: bundle exec rake test:all
 

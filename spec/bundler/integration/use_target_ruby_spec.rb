@@ -18,6 +18,13 @@ describe 'integration tests' do
   end
 
   context 'use target ruby' do
+    let(:other_ruby_version) do
+      # The referenced Ruby version must be an installed version in the OS. If
+      # you pick a Pre-installed Ruby version in Travis Build System Information
+      # then you can kill two birds with one stone.
+      '2.3.4'
+    end
+
     it 'with same ruby no bundle config' do
       bf = GemfileLockFixture.create(dir: @tmp_dir,
                                      gems: {rack: nil, addressable: nil},
@@ -37,11 +44,9 @@ describe 'integration tests' do
     it 'with different ruby no bundle config' do
       # Only the Gemfile is created here, with no lock file, because it won't work
       # in the fixture code to do the lock command against a declared older Ruby.
-      #
-      # The referenced Ruby version must be an installed version in the OS.
       glf = GemfileLockFixture.new(dir: @tmp_dir,
                                    gems: {rack: '~> 1.4.1', addressable: '2.1.1'},
-                                   ruby_version: '2.4.5')
+                                   ruby_version: other_ruby_version)
       glf.create_gemfile
       bf = glf.bundler_fixture
 
@@ -63,11 +68,9 @@ describe 'integration tests' do
     it 'with different ruby bundle config install path' do
       # Only the Gemfile is created here, with no lock file, because it won't work
       # in the fixture code to do the lock command against a declared older Ruby.
-      #
-      # The referenced Ruby version must be an installed version in the OS.
       glf = GemfileLockFixture.new(dir: @tmp_dir,
                                    gems: {rack: '~> 1.4.1', addressable: '2.1.1'},
-                                   ruby_version: '2.4.5')
+                                   ruby_version: other_ruby_version)
       glf.create_gemfile
       bf = glf.bundler_fixture
       bf.create_config(path: 'local-path')

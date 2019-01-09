@@ -133,11 +133,11 @@ describe TargetBundle do
   # for these specs to pass. The .travis.yml file should have a 2.4.5 hardcoded
   # to make sure it exists.
   context 'gem_home' do
-    # ENV vars for use inside Travis CI. Otherwise we presume developer to have
-    # 2.5.3 installed. That version can be changed in the future as Ruby
-    # versions march on.
-    let(:test_ruby_version) { ENV['RVM_VER'] || '2.5.3' }
-    let(:test_maj_min_ver) { ENV['RUBY_MAJ_MIN'] || '2.5.0' }
+    # ENV vars for use inside Travis CI. Otherwise we use the current version
+    # installed.
+    let(:current_ruby_version) { RbConfig::CONFIG['RUBY_PROGRAM_VERSION'] }
+    let(:test_ruby_version) { ENV['RVM_VER'] || current_ruby_version }
+    let(:test_maj_min_ver) { test_ruby_version.split('.')[0..1].join('.') }
 
     it 'should work with no local config path' do
       gemfile_create(test_ruby_version)

@@ -316,7 +316,7 @@ describe CLI do
         end
 
         res.should =~ /Detected vulnerabilities/
-        res.should =~ /#{Regexp.escape('rack ["1.6.2", "1.5.4", "1.4.6", "1.1.6", "1.2.8", "1.3.9"]')}/
+        res.should =~ /#{Regexp.escape('rack ["1.6.2", "1.5.4", "1.4.6", "2.0.6", "1.1.6", "1.2.8", "1.3.9"]')}/
       end
     end
 

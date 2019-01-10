@@ -38,19 +38,19 @@ matrix:
       - RUBYGEMS_VERSION=2.7.6
       - BUNDLER_TEST_VERSION=1.16.6
       - BP_DEBUG=1
+    - rvm: 2.3.8
+      env:
+        - RUBYGEMS_VERSION=2.5.2
+        - BUNDLER_TEST_VERSION=1.17.3
+        - BP_DEBUG=1
+    - rvm: 2.4.5
+      env:
+        - RUBYGEMS_VERSION=2.6.14
+        - BUNDLER_TEST_VERSION=1.17.3
+        - BP_DEBUG=1
     - rvm: 2.5.3
       env:
       - RUBYGEMS_VERSION=2.7.6
-      - BUNDLER_TEST_VERSION=1.17.3
-      - BP_DEBUG=1
-    - rvm: 2.4.5
-      env:
-      - RUBYGEMS_VERSION=2.6.14
-      - BUNDLER_TEST_VERSION=1.17.3
-      - BP_DEBUG=1
-    - rvm: 2.3.8
-      env:
-      - RUBYGEMS_VERSION=2.5.2
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.6.0
@@ -60,11 +60,16 @@ matrix:
       - BP_DEBUG=1
     - rvm: 2.6.0
       env:
-      # - RUBYGEMS_VERSION= go to latest
+      - RUBYGEMS_VERSION=latest
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.5.3
       env:
-        # - RUBYGEMS_VERSION= go to latest
-      - BUNDLER_TEST_VERSION=2.0.1
+      - RUBYGEMS_VERSION=latest
+      - BUNDLER_TEST_VERSION=latest
+      - BP_DEBUG=1
+    - rvm: 2.6.0
+      env:
+      - RUBYGEMS_VERSION=latest
+      - BUNDLER_TEST_VERSION=latest
       - BP_DEBUG=1

@@ -1,22 +1,7 @@
 language: ruby
 
 before_install:
-  - echo $GEM_PATH
-  - RUBY_MAJ_MIN=$(echo $RVM_VER | cut -d '.' -f 1,2)
-  - echo $RUBY_MAJ_MIN
-  - # this may bring in a new bundler and make it default, so it needs to happen before uninstalling bundlers
-  - gem update --system $RUBYGEMS_VERSION
-  - gem list bundler -d # see where the bundler versions are installed and which are listed as default
-  - # Move bundler gemspec from default to reg directory so it can be uninstalled. Is there an API way to do this?
-  - mv -v /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/default/bundler-*.gemspec /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0/specifications/
-  - for dir in $(echo $GEM_PATH | tr ':' ' '); do gem uninstall -i $dir bundler -a -x; done
-  - gem uninstall -i /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/gems/$RUBY_MAJ_MIN.0 bundler -a -x
-  `- rm -rf /home/travis/.rvm/rubies/ruby-$RVM_VER/lib/ruby/site_ruby/$RUBY_MAJ_MIN.0/bundler* # RubyGems update puts this Bundler here. Uninstalling isn't removing these.
-  - gem install bundler -v $BUNDLER_TEST_VERSION
-  - bundle --version
-  - which bundle
-  - gem list bundler -d
-  - gem -v # am I blowing away the very thing I updated earlier?
+  - curl -sSl https://raw.githubusercontent.com/chrismo/bundler-fixture/master/only-bundler.sh | bash -s ${BUNDLER_TEST_VERSION} ${RUBYGEMS_VERSION}
 
 script: bundle exec rake test:all
 
@@ -25,73 +10,61 @@ matrix:
   include:
     - rvm: 2.3.8
       env:
-      - RVM_VER=2.3.8
       - RUBYGEMS_VERSION=2.5.2
       - BUNDLER_TEST_VERSION=1.11.2
       - BP_DEBUG=1
     - rvm: 2.3.8
       env:
-      - RVM_VER=2.3.8
       - RUBYGEMS_VERSION=2.5.2
       - BUNDLER_TEST_VERSION=1.12.5
       - BP_DEBUG=1
     - rvm: 2.4.5
       env:
-      - RVM_VER=2.4.5
       - RUBYGEMS_VERSION=2.6.14
       - BUNDLER_TEST_VERSION=1.13.6
       - BP_DEBUG=1
     - rvm: 2.4.5
       env:
-      - RVM_VER=2.4.5
       - RUBYGEMS_VERSION=2.6.14
       - BUNDLER_TEST_VERSION=1.14.6
       - BP_DEBUG=1
     - rvm: 2.5.3
       env:
-      - RVM_VER=2.5.3
       - RUBYGEMS_VERSION=2.7.6
       - BUNDLER_TEST_VERSION=1.15.4
       - BP_DEBUG=1
     - rvm: 2.5.3
       env:
-      - RVM_VER=2.5.3
       - RUBYGEMS_VERSION=2.7.6
       - BUNDLER_TEST_VERSION=1.16.6
       - BP_DEBUG=1
     - rvm: 2.5.3
       env:
-      - RVM_VER=2.5.3
       - RUBYGEMS_VERSION=2.7.6
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.4.5
       env:
-      - RVM_VER=2.4.5
       - RUBYGEMS_VERSION=2.6.14
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.3.8
       env:
-      - RVM_VER=2.3.8
       - RUBYGEMS_VERSION=2.5.2
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.6.0
       env:
-      - RVM_VER=2.6.0
       - RUBYGEMS_VERSION=3.0.1
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.6.0
       env:
-      - RVM_VER=2.6.0
       # - RUBYGEMS_VERSION= go to latest
       - BUNDLER_TEST_VERSION=1.17.3
       - BP_DEBUG=1
     - rvm: 2.5.3
       env:
-      - RVM_VER=2.5.3
         # - RUBYGEMS_VERSION= go to latest
       - BUNDLER_TEST_VERSION=2.0.1
       - BP_DEBUG=1

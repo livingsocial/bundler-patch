@@ -10,7 +10,7 @@ class TargetBundle
   end
 
   def self.default_gemfile
-    # TODO: Make gems.rb default in Bundler 2.0.
+    # TODO: Make gems.rb default in Bundler 3.0.
     'Gemfile'
   end
 
@@ -79,27 +79,38 @@ class TargetBundle
     !(ruby_bin == RbConfig::CONFIG['bindir'])
   end
 
-  # Have to run a separate process in the other Ruby, because Gem.default_dir depends on
-  # RbConfig::CONFIG which is all special data derived from the active runtime. It could perhaps
-  # be redone here, but I'd rather not copy that code in here at the moment.
-  #
-  # At one point during development, this would execute Bundler::Settings#path, which in most
-  # cases would just fall through to Gem.default_dir ... but would give preference to GEM_HOME
-  # env variable, which could be in a different Ruby, and that won't work.
   def gem_home
-    result = shell_command "#{ruby_bin_exe} -C#{@dir} -e 'puts Gem.default_dir'"
+    target_dir('Gem.default_dir')
+  end
+
+  def bin_dir
+    target_dir('Gem.bindir')
+  end
+
+  # Have to run a separate process in the other Ruby, because Gem.default_dir
+  # depends on RbConfig::CONFIG which is all special data derived from the
+  # active runtime. It could perhaps be redone here, but I'd rather not copy
+  # that code in here at the moment.
+  #
+  # At one point during development, this would execute Bundler::Settings#path,
+  # which in most cases would just fall through to Gem.default_dir ... but would
+  # give preference to GEM_HOME env variable, which could be in a different
+  # Ruby, and that won't work.
+  def target_dir(cmd)
+    result = shell_command "#{ruby_bin_exe} -C#{@dir} -e 'puts #{cmd}'"
     path = result[:stdout].chomp
     expanded_path = Pathname.new(path).expand_path(@dir).to_s
     puts expanded_path if ENV['BP_DEBUG']
     expanded_path
   end
 
-  # To properly update another bundle, bundler-patch _does_ need to live in the same Ruby 
-  # version because of its _dependencies_ (it's not a self-contained gem), and it can't both
-  # act on another bundle location AND find its own dependencies in a separate bundle location.
+  # To properly update another bundle, bundler-patch _does_ need to live in the
+  # same Ruby version because of its _dependencies_ (it's not a self-contained
+  # gem), and it can't both act on another bundle location AND find its own
+  # dependencies in a separate bundle location.
   #
-  # One known issue: older RubyGems in older Rubies don't install bundler-patch bin in the right
-  # directory. Upgrading RubyGems fixes this.
+  # One known issue: older RubyGems in older Rubies don't install bundler-patch
+  # bin in the right directory. Upgrading RubyGems fixes this.
   def install_bundler_patch_in_target
     # TODO: reconsider --conservative flag. Had problems with it in place on Travis, but I think I want it.
     # cmd = "#{ruby_bin}#{File::SEPARATOR}gem install -V --install-dir #{gem_home} --conservative --no-document --prerelease bundler-patch"

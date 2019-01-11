@@ -81,7 +81,7 @@ module Bundler::Patch
       tb = options[:target]
       ruby = tb.ruby_bin_exe
       tb.install_bundler_patch_in_target
-      bundler_patch = File.join(tb.ruby_bin, 'bundler-patch')
+      bundler_patch = File.join(tb.bin_dir, 'bundler-patch')
       full_command = %Q{GEM_HOME="#{tb.gem_home}" "#{ruby}" "#{bundler_patch}" #{options[:original_command].gsub(/use_target_ruby/, '')}}
       result = shell_command(full_command)
       puts result[:stdout] unless ENV['BP_DEBUG']

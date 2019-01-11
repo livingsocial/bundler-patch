@@ -2,6 +2,7 @@ language: ruby
 
 before_install:
   - curl -sSl https://raw.githubusercontent.com/chrismo/bundler-fixture/master/only-bundler.sh | bash -s ${BUNDLER_TEST_VERSION} ${RUBYGEMS_VERSION}
+  - gem env
 
 script: bundle exec rake test:all
 

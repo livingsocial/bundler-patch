@@ -203,6 +203,21 @@ describe Gemfile do
           File.read('Gemfile').should have_line("gem ' foo ', '>= 1.3.0'")
         end
       end
+
+      it 'should be okay with additional arguments to gem command' do
+        gem_fixture_create(@tmpdir, {foo: '~> 1.2'}, {foo: '1.2.5'}) do
+          # Working around the fixture hax
+          gemfile = <<~_
+            source 'https://rubygems.org'
+            gem 'foo', '~> 1.2', require: "foo"
+          _
+          File.open('Gemfile', 'w') { |f| f.print gemfile }
+
+          s = Gemfile.new(gem_name: 'foo', patched_versions: ['1.3.0'])
+          s.update
+          File.read('Gemfile').should have_line("gem 'foo', '~> 1.3', require: \"foo\"")
+        end
+      end
     end
 
     describe 'Insecure sources' do
